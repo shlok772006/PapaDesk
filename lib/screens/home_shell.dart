@@ -7,6 +7,9 @@ import 'ledger/ledger_screen.dart';
 import 'inventory/inventory_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 
+import '../providers/auth_providers.dart';
+import 'onboarding/onboarding_overlay.dart';
+
 /// The main scaffold with bottom navigation bar.
 /// Hosts the tab screens: Dashboard, Sales, Payments, Ledger, Inventory.
 /// Navigation state is managed globally via [activeTabProvider].
@@ -24,8 +27,15 @@ class HomeShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(activeTabProvider);
+    final profileAsync = ref.watch(userProfileProvider);
+    
+    // Check if onboarding needs to be shown (default to false if loading/error)
+    final showOnboarding = profileAsync.maybeWhen(
+      data: (data) => data == null || !(data['onboarded'] as bool? ?? false),
+      orElse: () => false,
+    );
 
-    return Scaffold(
+    final mainScaffold = Scaffold(
       body: IndexedStack(
         index: currentIndex,
         children: _screens,
@@ -66,5 +76,25 @@ class HomeShell extends ConsumerWidget {
         height: 70,
       ),
     );
+
+    if (showOnboarding) {
+      return Stack(
+        children: [
+          mainScaffold,
+          // Transparent dark barrier
+          ModalBarrier(
+            color: Colors.black.withValues(alpha: 0.5),
+            dismissible: false,
+          ),
+          OnboardingOverlay(
+            onDismiss: () {
+              // Dismiss trigger is handled reactively by the Firestore update stream
+            },
+          ),
+        ],
+      );
+    }
+
+    return mainScaffold;
   }
 }

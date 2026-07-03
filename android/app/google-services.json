@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "813881301514",
+    "project_id": "papadesk-dev",
+    "storage_bucket": "papadesk-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813881301514:android:28d1e0d32df83287139df3",
+        "android_client_info": {
+          "package_name": "com.papadesk.papadesk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTU043t4DgN9wuYHHDI7G4M4xAqL2CQ-M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

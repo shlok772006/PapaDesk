@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/purchase.dart';
 import '../../providers/repository_providers.dart';
 import '../../providers/supplier_providers.dart';
+import '../../providers/role_provider.dart';
 import 'new_purchase_screen.dart';
 
 class PurchasesScreen extends ConsumerWidget {
@@ -17,6 +18,7 @@ class PurchasesScreen extends ConsumerWidget {
 
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final dateFormat = DateFormat('dd MMM, hh:mm a');
+    final isAdmin = ref.watch(isAdminProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -77,21 +79,23 @@ class PurchasesScreen extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'purchases_fab',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const NewPurchaseScreen(),
+      floatingActionButton: isAdmin
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'purchases_fab',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const NewPurchaseScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add, size: 28),
+              label: const Text(
+                'New Purchase',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
-          );
-        },
-        icon: const Icon(Icons.add, size: 28),
-        label: const Text(
-          'New Purchase',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-      ),
     );
   }
 }

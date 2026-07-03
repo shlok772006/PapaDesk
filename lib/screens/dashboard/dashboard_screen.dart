@@ -6,6 +6,7 @@ import 'search_screen.dart';
 import 'reports_screen.dart';
 
 import '../settings/settings_screen.dart';
+import '../../providers/role_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -14,6 +15,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(dashboardStatsProvider);
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
+    final isAdmin = ref.watch(isAdminProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -52,6 +54,33 @@ class DashboardScreen extends ConsumerWidget {
         data: (stats) => ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (isAdmin) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  border: Border.all(color: Colors.orange[200]!),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange[800], size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Admin Mode (Read-Only)',
+                        style: TextStyle(
+                          color: Colors.orange[900],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             // Search Box trigger
             GestureDetector(
               onTap: () {

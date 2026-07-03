@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/payment.dart';
 import '../../providers/repository_providers.dart';
+import '../../providers/role_provider.dart';
 import 'new_payment_screen.dart';
 
 /// Shows recent payments with a FAB to record a new payment.
@@ -18,6 +19,7 @@ class PaymentsScreen extends ConsumerWidget {
 
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final dateFormat = DateFormat('dd MMM, hh:mm a');
+    final isAdmin = ref.watch(isAdminProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -126,19 +128,21 @@ class PaymentsScreen extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'payments_fab',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NewPaymentScreen()),
-          );
-        },
-        icon: const Icon(Icons.add, size: 28),
-        label: const Text(
-          'New Payment',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ),
+      floatingActionButton: isAdmin
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'payments_fab',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const NewPaymentScreen()),
+                );
+              },
+              icon: const Icon(Icons.add, size: 28),
+              label: const Text(
+                'New Payment',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
     );
   }
 }

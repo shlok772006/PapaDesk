@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/customer_providers.dart';
+import '../../providers/role_provider.dart';
 import 'customer_detail_screen.dart';
 import 'add_edit_customer_screen.dart';
 
@@ -19,6 +20,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
   @override
   Widget build(BuildContext context) {
     final customersAsync = ref.watch(customersProvider);
+    final isAdmin = ref.watch(isAdminProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -190,21 +192,23 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'ledger_fab',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const AddEditCustomerScreen(),
+      floatingActionButton: isAdmin
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'ledger_fab',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AddEditCustomerScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add, size: 28),
+              label: const Text(
+                'Add Customer',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
-          );
-        },
-        icon: const Icon(Icons.add, size: 28),
-        label: const Text(
-          'Add Customer',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-      ),
     );
   }
 }

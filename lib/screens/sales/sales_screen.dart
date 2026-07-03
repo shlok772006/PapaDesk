@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/sale.dart';
 import '../../providers/sale_providers.dart';
+import '../../providers/role_provider.dart';
 import 'new_sale_screen.dart';
 
 /// Shows today's sales with a FAB to record a new sale.
@@ -14,6 +15,7 @@ class SalesScreen extends ConsumerWidget {
     final todaysSales = ref.watch(todaysSalesProvider);
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final timeFormat = DateFormat.jm();
+    final isAdmin = ref.watch(isAdminProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -129,19 +131,21 @@ class SalesScreen extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'sales_fab',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NewSaleScreen()),
-          );
-        },
-        icon: const Icon(Icons.add, size: 28),
-        label: const Text(
-          'New Sale',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ),
+      floatingActionButton: isAdmin
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'sales_fab',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const NewSaleScreen()),
+                );
+              },
+              icon: const Icon(Icons.add, size: 28),
+              label: const Text(
+                'New Sale',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
     );
   }
 }

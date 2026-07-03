@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/product_providers.dart';
+import '../../providers/role_provider.dart';
 import 'add_edit_product_screen.dart';
 import '../purchases/purchases_screen.dart';
 
@@ -19,6 +20,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   @override
   Widget build(BuildContext context) {
     final productsAsync = ref.watch(productsProvider);
+    final isAdmin = ref.watch(isAdminProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -211,21 +213,23 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'inventory_fab',
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const AddEditProductScreen(),
+      floatingActionButton: isAdmin
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'inventory_fab',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AddEditProductScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add, size: 28),
+              label: const Text(
+                'Add Product',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
-          );
-        },
-        icon: const Icon(Icons.add, size: 28),
-        label: const Text(
-          'Add Product',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-      ),
     );
   }
 }

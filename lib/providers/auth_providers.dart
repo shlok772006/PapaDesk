@@ -27,11 +27,11 @@ final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(() {
 final userProfileProvider = StreamProvider<Map<String, dynamic>?>((ref) {
   final authState = ref.watch(authStateProvider);
   final user = authState.value;
-  if (user == null) return Stream.value(null);
+  final uid = user?.uid ?? 'anonymous';
   
   return FirebaseFirestore.instance
       .collection('users')
-      .doc(user.uid)
+      .doc(uid)
       .snapshots()
       .map((snap) => snap.data());
 });

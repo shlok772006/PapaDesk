@@ -8,7 +8,6 @@ import 'screens/home_shell.dart';
 import 'firebase_options.dart';
 
 import 'providers/auth_providers.dart';
-import 'screens/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,7 +51,6 @@ class PapaDeskApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
-    final authState = ref.watch(authStateProvider);
 
     return MaterialApp(
       title: 'PapaDesk',
@@ -80,20 +78,7 @@ class PapaDeskApp extends ConsumerWidget {
           titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
-      home: authState.when(
-        loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-        error: (error, _) => Scaffold(
-          body: Center(child: Text('Auth Error: $error')),
-        ),
-        data: (user) {
-          if (user == null) {
-            return const LoginScreen();
-          }
-          return const HomeShell();
-        },
-      ),
+      home: const HomeShell(),
     );
   }
 }

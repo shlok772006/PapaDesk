@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+// ignore: depend_on_referenced_packages
+import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -43,9 +45,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       if (kIsWeb) {
-        // Firebase Web Phone sign-in
+        // Firebase Web Phone sign-in with compact reCAPTCHA
         final auth = FirebaseAuth.instance;
-        final confirmationResult = await auth.signInWithPhoneNumber(formattedPhone);
+        final verifier = RecaptchaVerifier(
+          auth: FirebaseAuthPlatform.instance,
+          container: 'recaptcha-container',
+          size: RecaptchaVerifierSize.compact,
+        );
+        final confirmationResult = await auth.signInWithPhoneNumber(
+          formattedPhone,
+          verifier,
+        );
         setState(() {
           _webConfirmationResult = confirmationResult;
           _codeSent = true;

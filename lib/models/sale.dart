@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// A single line item within a sale.
+///
+/// [unitPrice] defaults to the product's sellingPrice but can be adjusted
+/// per-sale by the operator (e.g., for a negotiated price). This replaces
+/// the need for a separate discount field.
 class SaleItem {
   final String productId;
   final String productName;
@@ -39,6 +43,9 @@ class SaleItem {
 
 /// Represents a sale transaction to a customer.
 ///
+/// No discount field — the operator adjusts the unitPrice on individual
+/// items if needed. This keeps the sale flow simpler (fewer fields).
+///
 /// [createdBy] is required on every sales document (AGENTS.md constraint #6).
 class Sale {
   final String id;
@@ -46,7 +53,6 @@ class Sale {
   final DateTime saleDate;
   final List<SaleItem> items;
   final double totalAmount;
-  final double discount;
   final double paidAmount;
   final String createdBy;
 
@@ -56,16 +62,12 @@ class Sale {
     required this.saleDate,
     required this.items,
     required this.totalAmount,
-    this.discount = 0,
     required this.paidAmount,
     required this.createdBy,
   });
 
-  /// The net amount after discount.
-  double get netAmount => totalAmount - discount;
-
-  /// The remaining balance the customer owes for this specific sale.
-  double get balanceDue => netAmount - paidAmount;
+  /// The remaining balance the customer owes for this sale.
+  double get balanceDue => totalAmount - paidAmount;
 
   factory Sale.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
@@ -78,7 +80,6 @@ class Sale {
               .toList() ??
           [],
       totalAmount: (data['totalAmount'] as num?)?.toDouble() ?? 0,
-      discount: (data['discount'] as num?)?.toDouble() ?? 0,
       paidAmount: (data['paidAmount'] as num?)?.toDouble() ?? 0,
       createdBy: data['createdBy'] as String? ?? '',
     );
@@ -90,7 +91,6 @@ class Sale {
       'saleDate': Timestamp.fromDate(saleDate),
       'items': items.map((item) => item.toMap()).toList(),
       'totalAmount': totalAmount,
-      'discount': discount,
       'paidAmount': paidAmount,
       'createdBy': createdBy,
     };

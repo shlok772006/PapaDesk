@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'screens/home_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,6 @@ void main() async {
 }
 
 /// Root application widget.
-/// Placeholder for now — UI modules will be built in Phase 1 Steps 2–5.
 class PapaDeskApp extends StatelessWidget {
   const PapaDeskApp({super.key});
 
@@ -57,15 +57,7 @@ class PapaDeskApp extends StatelessWidget {
           titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'PapaDesk\nData layer ready ✓',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 24),
-          ),
-        ),
-      ),
+      home: const HomeShell(),
     );
   }
 }

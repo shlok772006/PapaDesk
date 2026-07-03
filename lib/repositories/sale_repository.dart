@@ -26,8 +26,10 @@ class SaleRepository {
   /// In a single [WriteBatch]:
   /// 1. Writes the `sales` document.
   /// 2. For each item: decrements the product's `currentStock` by quantity.
-  /// 3. Increments the customer's `totalPurchases` by the net amount.
-  /// 4. Increments the customer's `pendingAmount` by (netAmount - paidAmount).
+  /// 3. Increments the customer's `totalPurchases` by the total amount.
+  /// 4. Increments the customer's `pendingAmount` by (totalAmount - paidAmount).
+  ///
+  /// No discount field — price adjustments happen per-item via unitPrice.
   ///
   /// This batch queues locally if offline and syncs when connectivity
   /// returns — no data is lost, and the operator sees it as "saved"
@@ -48,13 +50,12 @@ class SaleRepository {
     }
 
     // 3. Update customer aggregates.
-    final netAmount = sale.totalAmount - sale.discount;
-    final pendingIncrease = netAmount - sale.paidAmount;
+    final pendingIncrease = sale.totalAmount - sale.paidAmount;
     final customerRef =
         _firestore.collection('customers').doc(sale.customerId);
 
     batch.update(customerRef, {
-      'totalPurchases': FieldValue.increment(netAmount),
+      'totalPurchases': FieldValue.increment(sale.totalAmount),
       'pendingAmount': FieldValue.increment(pendingIncrease),
     });
 

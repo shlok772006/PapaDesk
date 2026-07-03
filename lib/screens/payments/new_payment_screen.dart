@@ -11,7 +11,9 @@ import '../../widgets/customer_selector.dart';
 /// 2. Enter amount + pick method (Cash / UPI / Bank Transfer)
 /// 3. Save
 class NewPaymentScreen extends ConsumerStatefulWidget {
-  const NewPaymentScreen({super.key});
+  final Customer? customer;
+
+  const NewPaymentScreen({super.key, this.customer});
 
   @override
   ConsumerState<NewPaymentScreen> createState() => _NewPaymentScreenState();
@@ -26,6 +28,12 @@ class _NewPaymentScreenState extends ConsumerState<NewPaymentScreen> {
   final _currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
 
   static const _methods = ['Cash', 'UPI', 'Bank Transfer'];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCustomer = widget.customer;
+  }
 
   @override
   void dispose() {

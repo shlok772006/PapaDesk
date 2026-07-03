@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'sales/sales_screen.dart';
 import 'payments/payments_screen.dart';
+import 'ledger/ledger_screen.dart';
+import 'inventory/inventory_screen.dart';
 
 /// The main scaffold with bottom navigation bar.
-/// Hosts the tab screens: Home (placeholder), Sales, Payments.
+/// Hosts the tab screens: Home, Sales, Payments, Ledger, Inventory.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -18,6 +20,8 @@ class _HomeShellState extends State<HomeShell> {
     _HomePlaceholder(),
     SalesScreen(),
     PaymentsScreen(),
+    LedgerScreen(),
+    InventoryScreen(),
   ];
 
   @override
@@ -47,6 +51,16 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.payments_outlined),
             selectedIcon: Icon(Icons.payments),
             label: 'Payments',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_alt_outlined),
+            selectedIcon: Icon(Icons.people_alt),
+            label: 'Ledger',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2),
+            label: 'Inventory',
           ),
         ],
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,

@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/dashboard_providers.dart';
 import 'sales/sales_screen.dart';
 import 'payments/payments_screen.dart';
 import 'ledger/ledger_screen.dart';
 import 'inventory/inventory_screen.dart';
+import 'dashboard/dashboard_screen.dart';
 
 /// The main scaffold with bottom navigation bar.
-/// Hosts the tab screens: Home, Sales, Payments, Ledger, Inventory.
-class HomeShell extends StatefulWidget {
+/// Hosts the tab screens: Dashboard, Sales, Payments, Ledger, Inventory.
+/// Navigation state is managed globally via [activeTabProvider].
+class HomeShell extends ConsumerWidget {
   const HomeShell({super.key});
 
-  @override
-  State<HomeShell> createState() => _HomeShellState();
-}
-
-class _HomeShellState extends State<HomeShell> {
-  int _currentIndex = 0;
-
   final _screens = const [
-    _HomePlaceholder(),
+    DashboardScreen(),
     SalesScreen(),
     PaymentsScreen(),
     LedgerScreen(),
@@ -25,16 +22,18 @@ class _HomeShellState extends State<HomeShell> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(activeTabProvider);
+
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: currentIndex,
         onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
+          ref.read(activeTabProvider.notifier).setTab(index);
         },
         destinations: const [
           NavigationDestination(
@@ -65,43 +64,6 @@ class _HomeShellState extends State<HomeShell> {
         ],
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         height: 70,
-      ),
-    );
-  }
-}
-
-/// Placeholder home screen until Dashboard is built in Step 4.
-class _HomePlaceholder extends StatelessWidget {
-  const _HomePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'PapaDesk',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: false,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.dashboard_outlined,
-                size: 80, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text(
-              'Dashboard coming soon',
-              style: TextStyle(fontSize: 20, color: Colors.grey[500]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Use Sales and Payments tabs to get started',
-              style: TextStyle(fontSize: 14, color: Colors.grey[400]),
-            ),
-          ],
-        ),
       ),
     );
   }

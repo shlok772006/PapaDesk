@@ -154,7 +154,13 @@ class _SaleTile extends ConsumerWidget {
     required this.timeFormat,
   });
 
-  void _showSaleDetails(BuildContext context, WidgetRef ref, String customerName, double currentDues) {
+  void _showSaleDetails(
+    BuildContext context,
+    WidgetRef ref,
+    String customerName,
+    double saleDues,
+    double customerDues,
+  ) {
     final isAdmin = ref.read(isAdminProvider).value ?? false;
 
     showModalBottomSheet(
@@ -251,12 +257,27 @@ class _SaleTile extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Current Outstanding Dues:', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                      const Text('Sale Dues Remaining:', style: TextStyle(fontSize: 15, color: Colors.grey)),
                       Text(
-                        currencyFormat.format(currentDues),
+                        currencyFormat.format(saleDues),
                         style: TextStyle(
                           fontSize: 15,
-                          color: currentDues <= 0 ? Colors.green : Colors.orange[800],
+                          color: saleDues <= 0 ? Colors.green : Colors.orange[800],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Total Customer Dues:', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                      Text(
+                        currencyFormat.format(customerDues),
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: customerDues <= 0 ? Colors.green : Colors.red[700],
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -328,15 +349,19 @@ class _SaleTile extends ConsumerWidget {
     final customers = ref.watch(customersProvider).value ?? [];
     final customer = customers.firstWhere((c) => c.id == sale.customerId, orElse: () => Customer(id: '', name: 'Unknown Customer', phone: '', createdAt: DateTime.now()));
     final customerName = customer.name;
-    final currentDues = customer.pendingAmount;
-    final isCustomerPaid = currentDues <= 0;
+    final customerPending = customer.pendingAmount;
+
+    // Calculate sale-specific remaining dues dynamically
+    final originalDue = sale.balanceDue;
+    final isSalePaid = originalDue <= 0 || customerPending <= 0;
+    final displayDues = isSalePaid ? 0.0 : (originalDue < customerPending ? originalDue : customerPending);
 
     final itemsSummary = sale.items.map((i) => '${i.productName} ×${i.quantity}').join(', ');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: () => _showSaleDetails(context, ref, customerName, currentDues),
+        onTap: () => _showSaleDetails(context, ref, customerName, displayDues, customerPending),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -397,15 +422,15 @@ class _SaleTile extends ConsumerWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: isCustomerPaid ? Colors.green[50] : Colors.orange[50],
+                      color: isSalePaid ? Colors.green[50] : Colors.orange[50],
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      isCustomerPaid ? 'Paid' : 'Dues: ${currencyFormat.format(currentDues)}',
+                      isSalePaid ? 'Paid' : 'Dues: ${currencyFormat.format(displayDues)}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: isCustomerPaid ? Colors.green[700] : Colors.orange[700],
+                        color: isSalePaid ? Colors.green[700] : Colors.orange[700],
                       ),
                     ),
                   ),

@@ -24,6 +24,7 @@ dependencies:
 
   # Formatting — architecture.md §6
   intl: ^0.20.3
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:

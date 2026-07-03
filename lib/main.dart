@@ -5,12 +5,15 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/home_shell.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase.
-  await Firebase.initializeApp();
+  // Initialize Firebase with platform-specific options (fixes web white screen).
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Configure Firestore for unlimited offline cache size.
   // (system-design.md §3: "configured to unlimited size on app initialization,
@@ -21,14 +24,16 @@ void main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
-  // Wire Crashlytics to catch all Flutter framework errors.
+  // Wire Crashlytics to catch all Flutter framework errors (non-web only).
   // (roadmap.md: "Wired in from the first Phase 1 build, not deferred —
   // cheap to add early, valuable immediately.")
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
+  if (!kIsWeb) {
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  }
 
   runApp(
     const ProviderScope(

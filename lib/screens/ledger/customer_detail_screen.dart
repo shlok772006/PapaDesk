@@ -151,6 +151,7 @@ class CustomerDetailScreen extends ConsumerWidget {
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
+            heroTag: 'customer_detail_fab',
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(

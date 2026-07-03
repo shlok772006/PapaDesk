@@ -191,6 +191,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'ledger_fab',
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(

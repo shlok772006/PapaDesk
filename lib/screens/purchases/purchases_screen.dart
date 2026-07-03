@@ -78,6 +78,7 @@ class PurchasesScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'purchases_fab',
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(

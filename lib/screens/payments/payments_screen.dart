@@ -127,6 +127,7 @@ class PaymentsScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'payments_fab',
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const NewPaymentScreen()),

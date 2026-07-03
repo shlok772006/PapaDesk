@@ -8,6 +8,7 @@ import '../../providers/product_providers.dart';
 import '../../providers/repository_providers.dart';
 import 'add_customer_dialog.dart';
 import '../../widgets/customer_selector.dart';
+import '../../widgets/product_image_widget.dart';
 
 /// A simplified, multi-product sale screen:
 /// 1. Select Customer
@@ -296,6 +297,8 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                       children: [
                         Row(
                           children: [
+                            buildProductImage(item.product.imageBase64, size: 40),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 item.product.name,
@@ -506,10 +509,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                     itemBuilder: (context, index) {
                       final product = filtered[index];
                       return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.blue[50],
-                          child: Icon(Icons.shopping_bag_outlined, color: Colors.blue[700]),
-                        ),
+                        leading: buildProductImage(product.imageBase64, size: 40),
                         title: Text(
                           product.name,
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),

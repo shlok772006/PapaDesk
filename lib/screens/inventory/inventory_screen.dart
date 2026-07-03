@@ -5,6 +5,7 @@ import '../../providers/product_providers.dart';
 import '../../providers/role_provider.dart';
 import 'add_edit_product_screen.dart';
 import '../purchases/purchases_screen.dart';
+import '../../widgets/product_image_widget.dart';
 
 class InventoryScreen extends ConsumerStatefulWidget {
   const InventoryScreen({super.key});
@@ -129,6 +130,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
+                              buildProductImage(product.imageBase64, size: 48),
+                              const SizedBox(width: 16),
                               // Product details
                               Expanded(
                                 child: Column(

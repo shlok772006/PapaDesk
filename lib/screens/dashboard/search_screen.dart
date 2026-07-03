@@ -5,6 +5,7 @@ import '../../providers/customer_providers.dart';
 import '../../providers/product_providers.dart';
 import '../ledger/customer_detail_screen.dart';
 import '../inventory/add_edit_product_screen.dart';
+import '../../widgets/product_image_widget.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -195,14 +196,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final isLow = product.isLowStock;
 
     return ListTile(
-      leading: CircleAvatar(
-        radius: 20,
-        backgroundColor: Colors.blue[50],
-        child: Text(
-          product.name.isNotEmpty ? product.name[0].toUpperCase() : '?',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[800]),
-        ),
-      ),
+      leading: buildProductImage(product.imageBase64, size: 40),
       title: Text(
         product.name,
         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
@@ -213,8 +207,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            _currencyFormat.format(product.sellingPrice),
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            'Cost: ${_currencyFormat.format(product.purchasePrice)}',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           if (isLow)
             Row(

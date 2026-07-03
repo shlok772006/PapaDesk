@@ -8,6 +8,7 @@ import '../../providers/product_providers.dart';
 import '../../providers/repository_providers.dart';
 import 'add_supplier_dialog.dart';
 import '../../widgets/supplier_selector.dart';
+import '../../widgets/product_image_widget.dart';
 
 class NewPurchaseScreen extends ConsumerStatefulWidget {
   const NewPurchaseScreen({super.key});
@@ -360,6 +361,8 @@ class _PurchaseItemTile extends StatelessWidget {
           children: [
             Row(
               children: [
+                buildProductImage(item.product.imageBase64, size: 40),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     item.product.name,
@@ -552,6 +555,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 6),
                       child: ListTile(
+                        leading: buildProductImage(product.imageBase64, size: 40),
                         onTap: () => widget.onSelected(product),
                         title: Text(
                           product.name,

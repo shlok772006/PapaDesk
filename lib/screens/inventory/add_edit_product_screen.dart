@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/product.dart';
 import '../../providers/repository_providers.dart';
+import '../../utils/image_picker_helper.dart';
+import '../../widgets/product_image_widget.dart';
 
 class AddEditProductScreen extends ConsumerStatefulWidget {
   final Product? product;
@@ -20,6 +22,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   late TextEditingController _minStockController;
   late TextEditingController _initialStockController;
   bool _saving = false;
+  String? _imageBase64;
 
   bool get isEdit => widget.product != null;
 
@@ -34,6 +37,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         TextEditingController(text: widget.product?.minStock.toString() ?? '5');
     _initialStockController =
         TextEditingController(text: widget.product?.currentStock.toString() ?? '0');
+    _imageBase64 = widget.product?.imageBase64;
   }
 
   @override
@@ -54,7 +58,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     final name = _nameController.text.trim();
     final category = _categoryController.text.trim();
     final purchasePrice = double.tryParse(_purchasePriceController.text) ?? 0.0;
-    const sellingPrice = 0.0; // Selling price is dynamic per sale, set to 0 in catalog
+    const sellingPrice = 0.0;
     final minStock = int.tryParse(_minStockController.text) ?? 5;
     final initialStock = int.tryParse(_initialStockController.text) ?? 0;
 
@@ -70,6 +74,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             'purchasePrice': purchasePrice,
             'sellingPrice': sellingPrice,
             'minStock': minStock,
+            'imageBase64': _imageBase64,
           },
         );
       } else {
@@ -80,7 +85,8 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
           purchasePrice: purchasePrice,
           sellingPrice: sellingPrice,
           minStock: minStock,
-          currentStock: initialStock, // Set stock ONLY on creation
+          currentStock: initialStock,
+          imageBase64: _imageBase64,
         );
         await repo.addProduct(newProduct);
       }
@@ -121,6 +127,42 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            // Circular Image Picker at the top
+            Center(
+              child: GestureDetector(
+                onTap: () async {
+                  final base64 = await pickImageAsBase64();
+                  if (base64 != null) {
+                    setState(() => _imageBase64 = base64);
+                  }
+                },
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 56,
+                      backgroundColor: Colors.grey[200],
+                      child: _imageBase64 == null
+                          ? Icon(Icons.shopping_bag_outlined, size: 48, color: Colors.grey[500])
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(56),
+                              child: buildProductImage(_imageBase64, size: 112),
+                            ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+
             // Name field
             TextFormField(
               controller: _nameController,
@@ -204,7 +246,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: _initialStockController,
-                    enabled: !isEdit, // Read-only on Edit
+                    enabled: !isEdit,
                     decoration: InputDecoration(
                       labelText: isEdit ? 'Stock (Read Only)' : 'Initial Stock',
                       suffixText: 'pcs',

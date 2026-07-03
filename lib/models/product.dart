@@ -16,6 +16,7 @@ class Product {
   final double sellingPrice;
   final int currentStock;
   final int minStock;
+  final String? imageBase64; // Base64 Data URL for optional product image
 
   const Product({
     required this.id,
@@ -26,6 +27,7 @@ class Product {
     required this.sellingPrice,
     this.currentStock = 0,
     this.minStock = 0,
+    this.imageBase64,
   });
 
   /// Whether this product is below its minimum stock threshold.
@@ -43,6 +45,7 @@ class Product {
       sellingPrice: (data['sellingPrice'] as num?)?.toDouble() ?? 0,
       currentStock: (data['currentStock'] as num?)?.toInt() ?? 0,
       minStock: (data['minStock'] as num?)?.toInt() ?? 0,
+      imageBase64: data['imageBase64'] as String?,
     );
   }
 
@@ -59,6 +62,7 @@ class Product {
       'sellingPrice': sellingPrice,
       'currentStock': currentStock,
       'minStock': minStock,
+      'imageBase64': imageBase64,
     };
   }
 
@@ -72,6 +76,7 @@ class Product {
       'purchasePrice': purchasePrice,
       'sellingPrice': sellingPrice,
       'minStock': minStock,
+      'imageBase64': imageBase64,
     };
   }
 }

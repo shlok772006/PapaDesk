@@ -109,4 +109,34 @@ class SaleRepository {
     if (!doc.exists) return null;
     return Sale.fromFirestore(doc);
   }
+
+  /// Deletes a sale, reverting inventory stock and customer balances.
+  Future<void> deleteSale(Sale sale) async {
+    final batch = _firestore.batch();
+
+    // 1. Delete the sale document.
+    final saleDocRef = _salesCollection.doc(sale.id);
+    batch.delete(saleDocRef);
+
+    // 2. Increment stock back (reversing the decrement).
+    for (final item in sale.items) {
+      final productRef = _firestore.collection('products').doc(item.productId);
+      batch.update(productRef, {
+        'currentStock': FieldValue.increment(item.quantity),
+      });
+    }
+
+    // 3. Reverse customer aggregate balances.
+    final pendingDecrease = sale.totalAmount - sale.paidAmount;
+    final customerRef = _firestore.collection('customers').doc(sale.customerId);
+    batch.update(customerRef, {
+      'totalPurchases': FieldValue.increment(-sale.totalAmount),
+      'pendingAmount': FieldValue.increment(-pendingDecrease),
+    });
+
+    // 4. Commit batch in background.
+    batch.commit().catchError((e) {
+      // Log/handles background errors
+    });
+  }
 }

@@ -15,3 +15,15 @@ final lowStockProductsProvider = StreamProvider<List<Product>>((ref) {
   final repo = ref.watch(productRepositoryProvider);
   return repo.getLowStockProducts();
 });
+
+/// Provider that extracts unique non-empty category names from the products catalog.
+final categoriesProvider = Provider<List<String>>((ref) {
+  final products = ref.watch(productsProvider).value ?? [];
+  final categories = products
+      .map((p) => p.category.trim())
+      .where((c) => c.isNotEmpty)
+      .toSet()
+      .toList();
+  categories.sort();
+  return categories;
+});

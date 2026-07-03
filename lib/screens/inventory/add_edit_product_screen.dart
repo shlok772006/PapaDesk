@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/product.dart';
+import '../../providers/product_providers.dart';
 import '../../providers/repository_providers.dart';
 import '../../utils/image_picker_helper.dart';
 import '../../widgets/product_image_widget.dart';
@@ -17,12 +18,15 @@ class AddEditProductScreen extends ConsumerStatefulWidget {
 class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _categoryController;
   late TextEditingController _purchasePriceController;
   late TextEditingController _minStockController;
   late TextEditingController _initialStockController;
+  late TextEditingController _customCategoryController;
+  
   bool _saving = false;
   String? _imageBase64;
+  String? _selectedCategory;
+  bool _showCustomCategoryInput = false;
 
   bool get isEdit => widget.product != null;
 
@@ -30,23 +34,28 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.product?.name ?? '');
-    _categoryController = TextEditingController(text: widget.product?.category ?? '');
     _purchasePriceController =
         TextEditingController(text: widget.product?.purchasePrice.toStringAsFixed(0) ?? '');
     _minStockController =
         TextEditingController(text: widget.product?.minStock.toString() ?? '5');
     _initialStockController =
         TextEditingController(text: widget.product?.currentStock.toString() ?? '0');
+    _customCategoryController = TextEditingController();
     _imageBase64 = widget.product?.imageBase64;
+    
+    final category = widget.product?.category ?? '';
+    if (category.isNotEmpty) {
+      _selectedCategory = category;
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _categoryController.dispose();
     _purchasePriceController.dispose();
     _minStockController.dispose();
     _initialStockController.dispose();
+    _customCategoryController.dispose();
     super.dispose();
   }
 
@@ -56,7 +65,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     setState(() => _saving = true);
 
     final name = _nameController.text.trim();
-    final category = _categoryController.text.trim();
+    final category = _showCustomCategoryInput
+        ? _customCategoryController.text.trim()
+        : (_selectedCategory ?? '');
     final purchasePrice = double.tryParse(_purchasePriceController.text) ?? 0.0;
     const sellingPrice = 0.0;
     final minStock = int.tryParse(_minStockController.text) ?? 5;
@@ -115,6 +126,12 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categoriesList = ref.watch(categoriesProvider);
+    final dropdownItems = <String>[...categoriesList];
+    if (_selectedCategory != null && _selectedCategory != 'custom' && !dropdownItems.contains(_selectedCategory)) {
+      dropdownItems.add(_selectedCategory!);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -185,20 +202,57 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Category field
-            TextFormField(
-              controller: _categoryController,
+            // Category field (Dropdown + Custom Input)
+            DropdownButtonFormField<String>(
+              // ignore: deprecated_member_use
+              value: _selectedCategory,
               decoration: InputDecoration(
                 labelText: 'Category',
-                hintText: 'Enter category (e.g., Chargers, Remotes)',
                 prefixIcon: const Icon(Icons.category),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              style: const TextStyle(fontSize: 18),
-              textCapitalization: TextCapitalization.words,
+              hint: const Text('Select category'),
+              items: [
+                ...dropdownItems.map((cat) => DropdownMenuItem(
+                      value: cat,
+                      child: Text(cat),
+                    )),
+                const DropdownMenuItem(
+                  value: 'custom',
+                  child: Text('+ Add New Category', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                ),
+              ],
+              onChanged: (val) {
+                setState(() {
+                  _selectedCategory = val;
+                  _showCustomCategoryInput = val == 'custom';
+                });
+              },
             ),
+            if (_showCustomCategoryInput) ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _customCategoryController,
+                decoration: InputDecoration(
+                  labelText: 'New Category Name *',
+                  hintText: 'Enter new category name',
+                  prefixIcon: const Icon(Icons.edit_note),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                style: const TextStyle(fontSize: 18),
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (_showCustomCategoryInput && (value == null || value.trim().isEmpty)) {
+                    return 'Please enter category name';
+                  }
+                  return null;
+                },
+              ),
+            ],
             const SizedBox(height: 20),
 
             // Purchase Price field (Full width)

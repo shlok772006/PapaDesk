@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../models/payment.dart';
-import '../../providers/repository_providers.dart';
+import '../../providers/payment_providers.dart';
 import '../../providers/role_provider.dart';
 import 'new_payment_screen.dart';
 
-/// Shows recent payments with a FAB to record a new payment.
+/// Shows unified cash transactions ( ledger dues payments, sales payments, and product purchases).
 class PaymentsScreen extends ConsumerWidget {
   const PaymentsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Stream recent payments (last 30 days)
-    final repo = ref.watch(paymentRepositoryProvider);
-    final now = DateTime.now();
-    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
-
+    final transactionsAsync = ref.watch(recentTransactionsProvider);
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final dateFormat = DateFormat('dd MMM, hh:mm a');
     final isAdmin = ref.watch(isAdminProvider).value ?? false;
@@ -24,41 +19,38 @@ class PaymentsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Payments',
+          'Cash Book / Payments',
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         centerTitle: false,
       ),
-      body: StreamBuilder<List<Payment>>(
-        stream: repo.getPaymentsForDateRange(thirtyDaysAgo, now),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}',
-                  style: const TextStyle(fontSize: 16)),
-            );
-          }
-
-          final payments = snapshot.data ?? [];
-
-          if (payments.isEmpty) {
+      body: transactionsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Error loading transactions: $error',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ),
+        data: (transactions) {
+          if (transactions.isEmpty) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.payments_outlined,
-                      size: 80, color: Colors.grey[300]),
+                  Icon(Icons.payments_outlined, size: 80, color: Colors.grey[300]),
                   const SizedBox(height: 16),
                   Text(
-                    'No recent payments',
+                    'No recent cash flow events',
                     style: TextStyle(fontSize: 20, color: Colors.grey[500]),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tap + to record a payment',
+                    'Tap + to record a customer payment',
                     style: TextStyle(fontSize: 16, color: Colors.grey[400]),
                   ),
                 ],
@@ -67,22 +59,35 @@ class PaymentsScreen extends ConsumerWidget {
           }
 
           return ListView.builder(
-            itemCount: payments.length,
-            padding: const EdgeInsets.all(16),
+            itemCount: transactions.length,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemBuilder: (context, index) {
-              final payment = payments[index];
+              final tx = transactions[index];
+              final isOutflow = tx.type == TransactionType.purchase;
+              final amountColor = isOutflow ? Colors.red[700] : Colors.green[700];
+              final leadingColor = isOutflow ? Colors.red[50] : Colors.green[50];
+              final leadingIcon = isOutflow ? Icons.arrow_upward : Icons.arrow_downward;
+              final leadingIconColor = isOutflow ? Colors.red[700] : Colors.green[700];
+
+              final absAmount = tx.amount.abs();
+              final sign = isOutflow ? '-' : '+';
+
               return Card(
-                margin: const EdgeInsets.only(bottom: 8),
+                margin: const EdgeInsets.only(bottom: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey[100]!),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Payment icon
+                      // Arrow indicator
                       CircleAvatar(
                         radius: 22,
-                        backgroundColor: Colors.green[50],
-                        child: Icon(Icons.arrow_downward,
-                            color: Colors.green[700], size: 20),
+                        backgroundColor: leadingColor,
+                        child: Icon(leadingIcon, color: leadingIconColor, size: 20),
                       ),
                       const SizedBox(width: 16),
 
@@ -91,21 +96,37 @@ class PaymentsScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Row(
+                              children: [
+                                Text(
+                                  tx.title,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: isOutflow ? Colors.red[700] : Colors.blue[800],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '•  ${dateFormat.format(tx.date)}',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
                             Text(
-                              payment.method.isNotEmpty
-                                  ? payment.method[0].toUpperCase() +
-                                      payment.method.substring(1)
-                                  : 'Payment',
+                              tx.partyName,
                               style: const TextStyle(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              dateFormat.format(payment.paymentDate),
-                              style: TextStyle(
-                                  fontSize: 13, color: Colors.grey[500]),
+                              tx.subtitle,
+                              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -113,11 +134,11 @@ class PaymentsScreen extends ConsumerWidget {
 
                       // Amount
                       Text(
-                        currencyFormat.format(payment.amount),
+                        '$sign ${currencyFormat.format(absAmount)}',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green[700],
+                          color: amountColor,
                         ),
                       ),
                     ],

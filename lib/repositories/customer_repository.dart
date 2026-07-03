@@ -17,7 +17,8 @@ class CustomerRepository {
 
   /// Creates a new customer. totalPurchases and pendingAmount start at 0.
   Future<String> addCustomer(Customer customer) async {
-    final docRef = await _collection.add(customer.toFirestore());
+    final docRef = _collection.doc();
+    docRef.set(customer.toFirestore()).catchError((e) {});
     return docRef.id;
   }
 
@@ -57,13 +58,13 @@ class CustomerRepository {
     // Safety: strip out aggregate fields if they were accidentally included.
     fields.remove('totalPurchases');
     fields.remove('pendingAmount');
-    await _collection.doc(id).update(fields);
+    _collection.doc(id).update(fields).catchError((e) {});
   }
 
   /// Deletes a customer. Use with caution — only for cleanup of
   /// test data or customers with zero transactions.
   Future<void> deleteCustomer(String id) async {
-    await _collection.doc(id).delete();
+    _collection.doc(id).delete().catchError((e) {});
   }
 
   /// Returns a DocumentReference for use in batched writes

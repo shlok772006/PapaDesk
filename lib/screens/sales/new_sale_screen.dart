@@ -9,9 +9,11 @@ import '../../providers/repository_providers.dart';
 import 'add_customer_dialog.dart';
 import '../../widgets/customer_selector.dart';
 
-/// A simplified, single-item sale screen:
-/// 1. If no customer is picked, displays CustomerSelector.
-/// 2. Once selected, prompts to pick a Product and enter Selling Price & Amount Paid.
+/// A simplified, multi-product sale screen:
+/// 1. Select Customer
+/// 2. Pick multiple Products (with inline editable Quantity and Selling Price)
+/// 3. Enter Amount Paid
+/// 4. Save
 class NewSaleScreen extends ConsumerStatefulWidget {
   const NewSaleScreen({super.key});
 
@@ -21,17 +23,24 @@ class NewSaleScreen extends ConsumerStatefulWidget {
 
 class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
   Customer? _selectedCustomer;
-  Product? _selectedProduct;
-  
-  final _sellingPriceController = TextEditingController();
+  final List<_CartItem> _cartItems = [];
   final _paidController = TextEditingController();
   
   bool _saving = false;
   final _currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
 
+  double get _totalAmount {
+    return _cartItems.fold(0.0, (sum, item) {
+      final price = double.tryParse(item.priceController.text.trim()) ?? 0.0;
+      return sum + (price * item.quantity);
+    });
+  }
+
   @override
   void dispose() {
-    _sellingPriceController.dispose();
+    for (final item in _cartItems) {
+      item.priceController.dispose();
+    }
     _paidController.dispose();
     super.dispose();
   }
@@ -40,13 +49,30 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
     setState(() => _selectedCustomer = customer);
   }
 
-  void _selectProduct(Product product) {
-    setState(() {
-      _selectedProduct = product;
-      _sellingPriceController.clear();
-      _paidController.clear();
-    });
+  void _addProduct(Product product) {
+    // Check if already in cart
+    final existingIndex = _cartItems.indexWhere((item) => item.product.id == product.id);
+    if (existingIndex >= 0) {
+      setState(() {
+        _cartItems[existingIndex].quantity++;
+      });
+    } else {
+      setState(() {
+        _cartItems.add(_CartItem(
+          product: product,
+          quantity: 1,
+          initialPrice: 0.0, // Defaults to empty so they enter it dynamically
+        ));
+      });
+    }
     Navigator.of(context).pop(); // Close product picker
+  }
+
+  void _removeProduct(int index) {
+    setState(() {
+      _cartItems[index].priceController.dispose();
+      _cartItems.removeAt(index);
+    });
   }
 
   void _showProductPicker() {
@@ -72,7 +98,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                 products: products,
                 scrollController: scrollController,
                 currencyFormat: _currencyFormat,
-                onSelected: _selectProduct,
+                onSelected: _addProduct,
               ),
             );
           },
@@ -86,20 +112,31 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       _showError('Please select a customer');
       return;
     }
-    if (_selectedProduct == null) {
-      _showError('Please select a product');
+    if (_cartItems.isEmpty) {
+      _showError('Please add at least one product');
       return;
     }
 
-    final sellingPriceText = _sellingPriceController.text.trim();
-    if (sellingPriceText.isEmpty || double.tryParse(sellingPriceText) == null) {
-      _showError('Please enter a valid selling price');
-      return;
+    final List<SaleItem> items = [];
+    for (final item in _cartItems) {
+      final priceText = item.priceController.text.trim();
+      final price = double.tryParse(priceText) ?? 0.0;
+      if (price <= 0) {
+        _showError('Please enter a valid price for ${item.product.name}');
+        return;
+      }
+      items.add(SaleItem(
+        productId: item.product.id,
+        productName: item.product.name,
+        quantity: item.quantity,
+        unitPrice: price,
+        subtotal: price * item.quantity,
+      ));
     }
 
-    final sellingPrice = double.parse(sellingPriceText);
+    final total = _totalAmount;
     final paidAmountText = _paidController.text.trim();
-    final paidAmount = paidAmountText.isEmpty ? sellingPrice : (double.tryParse(paidAmountText) ?? 0.0);
+    final paidAmount = paidAmountText.isEmpty ? total : (double.tryParse(paidAmountText) ?? 0.0);
 
     setState(() => _saving = true);
 
@@ -110,16 +147,8 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       id: '',
       customerId: _selectedCustomer!.id,
       saleDate: DateTime.now(),
-      items: [
-        SaleItem(
-          productId: _selectedProduct!.id,
-          productName: _selectedProduct!.name,
-          quantity: 1,
-          unitPrice: sellingPrice,
-          subtotal: sellingPrice,
-        ),
-      ],
-      totalAmount: sellingPrice,
+      items: items,
+      totalAmount: total,
       paidAmount: paidAmount,
       createdBy: userId,
     );
@@ -154,7 +183,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Step 1: Force customer selection first if none is selected
+    // Step 1: Customer Selection first
     if (_selectedCustomer == null) {
       return Scaffold(
         appBar: AppBar(
@@ -175,7 +204,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       );
     }
 
-    // Step 2 & 3: Customer selected. Show product selection and prices inputs.
+    // Step 2: Customer selected, show products card & billing inputs
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -186,7 +215,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          // Selected Customer Card
+          // Customer card
           Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -208,7 +237,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
               trailing: TextButton(
                 onPressed: () => setState(() {
                   _selectedCustomer = null;
-                  _selectedProduct = null;
+                  _cartItems.clear();
                 }),
                 child: const Text('Change', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
@@ -216,99 +245,172 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Select Product Section
-          const Text(
-            'Select Product',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+          // Cart Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Selected Products',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+              ),
+              TextButton.icon(
+                onPressed: _showProductPicker,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Product', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          if (_selectedProduct == null)
-            OutlinedButton.icon(
-              onPressed: _showProductPicker,
-              icon: const Icon(Icons.add_shopping_cart, size: 24),
-              label: const Text('Pick Product', style: TextStyle(fontSize: 18)),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(60),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          const SizedBox(height: 8),
+
+          if (_cartItems.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Text(
+                  'No products added yet. Click Add Product.',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
               ),
             )
           else
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Theme.of(context).colorScheme.primaryContainer),
-              ),
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: const Icon(Icons.shopping_bag, color: Colors.white),
-                ),
-                title: Text(
-                  _selectedProduct!.name,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  'Category: ${_selectedProduct!.category} • Stock: ${_selectedProduct!.currentStock} pcs',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                trailing: TextButton(
-                  onPressed: _showProductPicker,
-                  child: const Text('Change', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
-              ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _cartItems.length,
+              itemBuilder: (context, index) {
+                final item = _cartItems[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey[200]!),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.product.name,
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => _removeProduct(index),
+                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            // Quantity Controls
+                            Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey[300]!),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      if (item.quantity > 1) {
+                                        setState(() => item.quantity--);
+                                      }
+                                    },
+                                    icon: const Icon(Icons.remove),
+                                    iconSize: 20,
+                                  ),
+                                  Text(
+                                    '${item.quantity}',
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() => item.quantity++);
+                                    },
+                                    icon: const Icon(Icons.add),
+                                    iconSize: 20,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // Selling Price Input Box
+                            Expanded(
+                              child: TextField(
+                                controller: item.priceController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Selling Price *',
+                                  prefixText: '₹ ',
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                ),
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                onChanged: (val) {
+                                  // Refresh total
+                                  setState(() {});
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          
-          if (_selectedProduct != null) ...[
+
+          if (_cartItems.isNotEmpty) ...[
             const SizedBox(height: 32),
-            // Enter Sale Pricing
+            // Billing Summary
             const Text(
-              'Enter Sale Pricing',
+              'Billing Summary',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
             ),
             const SizedBox(height: 16),
             
-            // Box 1: Selling Price
-            TextField(
-              controller: _sellingPriceController,
-              decoration: InputDecoration(
-                labelText: 'Selling Price *',
-                prefixText: '₹ ',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+            // Total Amount Display
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Total Amount:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                Text(
+                  _currencyFormat.format(_totalAmount),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                helperText: 'Enter price sold to this customer',
-              ),
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              autofocus: true,
-              onChanged: (val) {
-                // Pre-fill Amount Paid Now with Selling Price as they type
-                setState(() {});
-              },
+              ],
             ),
             const SizedBox(height: 20),
 
-            // Box 2: Amount Paid Now
+            // Amount Paid Box
             TextField(
               controller: _paidController,
               decoration: InputDecoration(
                 labelText: 'Amount Paid Now',
                 prefixText: '₹ ',
-                hintText: _sellingPriceController.text.isEmpty ? '0' : _sellingPriceController.text,
+                hintText: _currencyFormat.format(_totalAmount).replaceAll('₹', '').trim(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 helperText: 'Leave empty for full payment',
               ),
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 40),
 
-            // Save button
+            // Save Button
             SizedBox(
               height: 58,
               child: FilledButton.icon(
@@ -367,7 +469,6 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Handle bar
           Container(
             width: 40,
             height: 4,
@@ -426,4 +527,18 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
       ),
     );
   }
+}
+
+// ── Local Cart Item Helper ───────────────────────────────────────────
+
+class _CartItem {
+  final Product product;
+  int quantity;
+  final TextEditingController priceController;
+
+  _CartItem({
+    required this.product,
+    required this.quantity,
+    required double initialPrice,
+  }) : priceController = TextEditingController(text: initialPrice > 0 ? initialPrice.toStringAsFixed(0) : '');
 }

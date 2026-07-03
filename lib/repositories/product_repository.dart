@@ -18,7 +18,8 @@ class ProductRepository {
   /// Creates a new product. Allows an initial currentStock value —
   /// this is a one-time setup convenience for existing inventory.
   Future<String> addProduct(Product product) async {
-    final docRef = await _collection.add(product.toFirestore());
+    final docRef = _collection.doc();
+    docRef.set(product.toFirestore()).catchError((e) {});
     return docRef.id;
   }
 
@@ -57,13 +58,13 @@ class ProductRepository {
   Future<void> updateProduct(String id, Map<String, dynamic> fields) async {
     // Safety: strip out currentStock if accidentally included.
     fields.remove('currentStock');
-    await _collection.doc(id).update(fields);
+    _collection.doc(id).update(fields).catchError((e) {});
   }
 
   /// Deletes a product. Use with caution — only for test data cleanup
   /// or products that have never been sold.
   Future<void> deleteProduct(String id) async {
-    await _collection.doc(id).delete();
+    _collection.doc(id).delete().catchError((e) {});
   }
 
   /// Returns a DocumentReference for use in batched writes

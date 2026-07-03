@@ -38,8 +38,10 @@ class PaymentRepository {
       'pendingAmount': FieldValue.increment(-payment.amount),
     });
 
-    // 3. Commit — works offline, queues locally.
-    await batch.commit();
+    // Execute batch commit in the background to prevent network latency from blocking the UI
+    batch.commit().catchError((e) {
+      // Background sync handles persistence/retries automatically
+    });
     return paymentDocRef.id;
   }
 

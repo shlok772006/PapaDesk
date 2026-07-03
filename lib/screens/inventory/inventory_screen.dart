@@ -143,7 +143,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${product.category} • Cost: ${_currencyFormat.format(product.purchasePrice)}',
+                                      product.category,
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Colors.grey[600],
@@ -155,15 +155,15 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
 
                               const SizedBox(width: 8),
 
-                              // Stock + Price details
+                              // Stock + Cost details
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  // Price
+                                  // Cost
                                   Text(
-                                    _currencyFormat.format(product.sellingPrice),
+                                    'Cost: ${_currencyFormat.format(product.purchasePrice)}',
                                     style: const TextStyle(
-                                      fontSize: 18,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),

@@ -17,7 +17,6 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   late TextEditingController _nameController;
   late TextEditingController _categoryController;
   late TextEditingController _purchasePriceController;
-  late TextEditingController _sellingPriceController;
   late TextEditingController _minStockController;
   late TextEditingController _initialStockController;
   bool _saving = false;
@@ -31,8 +30,6 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     _categoryController = TextEditingController(text: widget.product?.category ?? '');
     _purchasePriceController =
         TextEditingController(text: widget.product?.purchasePrice.toStringAsFixed(0) ?? '');
-    _sellingPriceController =
-        TextEditingController(text: widget.product?.sellingPrice.toStringAsFixed(0) ?? '');
     _minStockController =
         TextEditingController(text: widget.product?.minStock.toString() ?? '5');
     _initialStockController =
@@ -44,7 +41,6 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     _nameController.dispose();
     _categoryController.dispose();
     _purchasePriceController.dispose();
-    _sellingPriceController.dispose();
     _minStockController.dispose();
     _initialStockController.dispose();
     super.dispose();
@@ -58,7 +54,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     final name = _nameController.text.trim();
     final category = _categoryController.text.trim();
     final purchasePrice = double.tryParse(_purchasePriceController.text) ?? 0.0;
-    final sellingPrice = double.tryParse(_sellingPriceController.text) ?? 0.0;
+    const sellingPrice = 0.0; // Selling price is dynamic per sale, set to 0 in catalog
     final minStock = int.tryParse(_minStockController.text) ?? 5;
     final initialStock = int.tryParse(_initialStockController.text) ?? 0;
 
@@ -163,53 +159,25 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Pricing Row
-            Row(
-              children: [
-                // Purchase Price
-                Expanded(
-                  child: TextFormField(
-                    controller: _purchasePriceController,
-                    decoration: InputDecoration(
-                      labelText: 'Purchase Price *',
-                      prefixText: '₹ ',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    style: const TextStyle(fontSize: 18),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    validator: (value) {
-                      if (value == null || double.tryParse(value) == null) {
-                        return 'Enter a price';
-                      }
-                      return null;
-                    },
-                  ),
+            // Purchase Price field (Full width)
+            TextFormField(
+              controller: _purchasePriceController,
+              decoration: InputDecoration(
+                labelText: 'Purchase Price *',
+                prefixText: '₹ ',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 16),
-                // Selling Price
-                Expanded(
-                  child: TextFormField(
-                    controller: _sellingPriceController,
-                    decoration: InputDecoration(
-                      labelText: 'Selling Price *',
-                      prefixText: '₹ ',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    style: const TextStyle(fontSize: 18),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    validator: (value) {
-                      if (value == null || double.tryParse(value) == null) {
-                        return 'Enter a price';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
+                prefixIcon: const Icon(Icons.currency_rupee),
+              ),
+              style: const TextStyle(fontSize: 18),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              validator: (value) {
+                if (value == null || double.tryParse(value) == null) {
+                  return 'Enter a price';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 20),
 

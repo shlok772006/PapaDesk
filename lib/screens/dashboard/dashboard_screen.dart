@@ -120,10 +120,9 @@ class DashboardScreen extends ConsumerWidget {
                     context: context,
                     title: "Today's Sales",
                     value: currencyFormat.format(stats.todaysSales),
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    textColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                    gradientColors: [const Color(0xFF2E5BFF), const Color(0xFF7C4DFF)],
+                    icon: Icons.trending_up,
                     onTap: () {
-                      // Switch to Sales Tab (index 1)
                       ref.read(activeTabProvider.notifier).setTab(1);
                     },
                   ),
@@ -136,10 +135,11 @@ class DashboardScreen extends ConsumerWidget {
                     context: context,
                     title: 'Money to Collect',
                     value: currencyFormat.format(stats.totalPendingDues),
-                    color: stats.totalPendingDues > 0 ? Colors.red[50]! : Colors.green[50]!,
-                    textColor: stats.totalPendingDues > 0 ? Colors.red[700]! : Colors.green[700]!,
+                    gradientColors: stats.totalPendingDues > 0
+                        ? [const Color(0xFFFF4D77), const Color(0xFFFF7C4D)]
+                        : [const Color(0xFF43A047), const Color(0xFF66BB6A)],
+                    icon: Icons.account_balance_wallet,
                     onTap: () {
-                      // Switch to Ledger Tab (index 3)
                       ref.read(activeTabProvider.notifier).setTab(3);
                     },
                   ),
@@ -154,11 +154,12 @@ class DashboardScreen extends ConsumerWidget {
                 // Stock Valuation
                 Expanded(
                   child: _buildSummaryMiniCard(
+                    context: context,
                     title: 'Stock Valuation',
                     value: currencyFormat.format(stats.stockValue),
                     icon: Icons.inventory,
-                    color: Colors.blue[50]!,
-                    iconColor: Colors.blue[700]!,
+                    iconBgColor: const Color(0xFFE3F2FD),
+                    iconColor: const Color(0xFF1E88E5),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -166,11 +167,12 @@ class DashboardScreen extends ConsumerWidget {
                 // Active Customers
                 Expanded(
                   child: _buildSummaryMiniCard(
+                    context: context,
                     title: 'Active Customers',
                     value: '${stats.totalCustomers}',
                     icon: Icons.people,
-                    color: Colors.purple[50]!,
-                    iconColor: Colors.purple[700]!,
+                    iconBgColor: const Color(0xFFF3E5F5),
+                    iconColor: const Color(0xFF8E24AA),
                   ),
                 ),
               ],
@@ -189,60 +191,81 @@ class DashboardScreen extends ConsumerWidget {
     required BuildContext context,
     required String title,
     required String value,
-    required Color color,
-    required Color textColor,
+    required List<Color> gradientColors,
+    required IconData icon,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 2,
-      color: color,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors[0].withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: textColor.withValues(alpha: 0.8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white70,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    Icon(icon, color: Colors.white70, size: 20),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Text(
-                    'View list',
-                    style: TextStyle(
-                      fontSize: 12,
+                const SizedBox(height: 16),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: textColor,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.arrow_forward, size: 14, color: textColor),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 12),
+                const Row(
+                  children: [
+                    Text(
+                      'View Details',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward, size: 14, color: Colors.white),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -250,23 +273,35 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildSummaryMiniCard({
+    required BuildContext context,
     required String title,
     required String value,
     required IconData icon,
-    required Color color,
+    required Color iconBgColor,
     required Color iconColor,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       elevation: 0,
-      color: color,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark ? const Color(0xFF22283A) : const Color(0xFFEBEFF9),
+          width: 1,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(icon, color: iconColor, size: 28),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -275,20 +310,20 @@ class DashboardScreen extends ConsumerWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: isDark ? const Color(0xFFA0A7B5) : const Color(0xFF6E7582),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
                       value,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[900],
+                        color: isDark ? const Color(0xFFE2E6F0) : const Color(0xFF1E2229),
                       ),
                     ),
                   ),

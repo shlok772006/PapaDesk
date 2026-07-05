@@ -79,78 +79,82 @@ class PaymentsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: Colors.grey[100]!),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Arrow indicator
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: leadingColor,
-                        child: Icon(leadingIcon, color: leadingIconColor, size: 20),
-                      ),
-                      const SizedBox(width: 16),
+                child: InkWell(
+                  onTap: () => _showTransactionDetails(context, tx),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Arrow indicator
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: leadingColor,
+                          child: Icon(leadingIcon, color: leadingIconColor, size: 20),
+                        ),
+                        const SizedBox(width: 16),
 
-                      // Details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  tx.title,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: isOutflow ? Colors.red[700] : Colors.blue[800],
+                        // Details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    tx.title,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: isOutflow ? Colors.red[700] : Colors.blue[800],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    '•  ${dateFormat.format(tx.date)}',
-                                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (tx.hasPendingWrites) ...[
                                   const SizedBox(width: 6),
-                                  SyncIndicator(hasPendingWrites: true),
+                                  Expanded(
+                                    child: Text(
+                                      '•  ${dateFormat.format(tx.date)}',
+                                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (tx.hasPendingWrites) ...[
+                                    const SizedBox(width: 6),
+                                    SyncIndicator(hasPendingWrites: true),
+                                  ],
                                 ],
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              tx.partyName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              tx.subtitle,
-                              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                tx.partyName,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                tx.subtitle,
+                                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
 
-                      // Amount
-                      Text(
-                        '$sign ${currencyFormat.format(absAmount)}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: amountColor,
+                        // Amount
+                        Text(
+                          '$sign ${currencyFormat.format(absAmount)}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: amountColor,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -173,6 +177,121 @@ class PaymentsScreen extends ConsumerWidget {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
+    );
+  }
+
+  void _showTransactionDetails(BuildContext context, CashTransaction tx) {
+    final fullDateFormat = DateFormat('dd MMMM yyyy, hh:mm a');
+    final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
+    final isOutflow = tx.type == TransactionType.purchase;
+    final amountColor = isOutflow ? Colors.red[700] : Colors.green[700];
+    final sign = isOutflow ? '-' : '+';
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  tx.title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '$sign ${currencyFormat.format(tx.amount.abs())}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: amountColor,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Party Name:', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                    Text(
+                      tx.partyName,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Date & Time:', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                    Text(
+                      fullDateFormat.format(tx.date),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Reference ID:', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                    Text(
+                      tx.id,
+                      style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: Colors.grey),
+                    ),
+                  ],
+                ),
+                if (tx.subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text('Details / Remarks:', style: TextStyle(fontSize: 15, color: Colors.grey, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Text(
+                      tx.subtitle,
+                      style: const TextStyle(fontSize: 15, height: 1.4),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 28),
+                SizedBox(
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

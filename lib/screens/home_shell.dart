@@ -85,30 +85,80 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             onDestinationSelected: (index) {
               ref.read(activeTabProvider.notifier).setTab(index);
             },
-            destinations: const [
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home),
+                icon: AnimatedScale(
+                  scale: currentIndex == 0 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.home_outlined),
+                ),
+                selectedIcon: AnimatedScale(
+                  scale: currentIndex == 0 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.home),
+                ),
                 label: 'Home',
               ),
               NavigationDestination(
-                icon: Icon(Icons.receipt_long_outlined),
-                selectedIcon: Icon(Icons.receipt_long),
+                icon: AnimatedScale(
+                  scale: currentIndex == 1 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.receipt_long_outlined),
+                ),
+                selectedIcon: AnimatedScale(
+                  scale: currentIndex == 1 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.receipt_long),
+                ),
                 label: 'Sales',
               ),
               NavigationDestination(
-                icon: Icon(Icons.payments_outlined),
-                selectedIcon: Icon(Icons.payments),
+                icon: AnimatedScale(
+                  scale: currentIndex == 2 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.payments_outlined),
+                ),
+                selectedIcon: AnimatedScale(
+                  scale: currentIndex == 2 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.payments),
+                ),
                 label: 'Payments',
               ),
               NavigationDestination(
-                icon: Icon(Icons.people_alt_outlined),
-                selectedIcon: Icon(Icons.people_alt),
+                icon: AnimatedScale(
+                  scale: currentIndex == 3 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.people_alt_outlined),
+                ),
+                selectedIcon: AnimatedScale(
+                  scale: currentIndex == 3 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.people_alt),
+                ),
                 label: 'Ledger',
               ),
               NavigationDestination(
-                icon: Icon(Icons.inventory_2_outlined),
-                selectedIcon: Icon(Icons.inventory_2),
+                icon: AnimatedScale(
+                  scale: currentIndex == 4 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.inventory_2_outlined),
+                ),
+                selectedIcon: AnimatedScale(
+                  scale: currentIndex == 4 ? 1.2 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  child: const Icon(Icons.inventory_2),
+                ),
                 label: 'Inventory',
               ),
             ],

@@ -1,10 +1,12 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/dashboard_providers.dart';
+import '../../widgets/animated_counter.dart';
+import '../../widgets/shimmer_loading.dart';
 import 'search_screen.dart';
 import 'reports_screen.dart';
-
 import '../settings/settings_screen.dart';
 import '../../providers/role_provider.dart';
 
@@ -17,12 +19,11 @@ class DashboardScreen extends ConsumerWidget {
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
     final isAdmin = ref.watch(isAdminProvider).value ?? false;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'PapaDesk Dashboard',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('PapaDesk Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.bar_chart, size: 28),
@@ -48,68 +49,131 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: statsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Error: $err')),
-        data: (stats) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (isAdmin) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  border: Border.all(color: Colors.orange[200]!),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.orange[800], size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Admin Mode (Read-Only)',
-                        style: TextStyle(
-                          color: Colors.orange[900],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            // Search Box trigger
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const SearchScreen(),
-                  ),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.search, color: Colors.grey, size: 24),
-                    SizedBox(width: 12),
-                    Text(
-                      'Search customer or product...',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
-                    ),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          // Background Gradient Blobs for Glassmorphism depth
+          Positioned(
+            top: -40,
+            right: -40,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF2E5BFF).withValues(alpha: isDark ? 0.15 : 0.07),
               ),
             ),
-            const SizedBox(height: 24),
+          ),
+          Positioned(
+            top: 240,
+            left: -80,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF7C4DFF).withValues(alpha: isDark ? 0.12 : 0.05),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 40,
+            right: -60,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFFF4D77).withValues(alpha: isDark ? 0.10 : 0.04),
+              ),
+            ),
+          ),
+          
+          // Actual content overlay
+          statsAsync.when(
+            loading: () => ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const ShimmerLoading(width: double.infinity, height: 56, borderRadius: 12),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: ShimmerLoading(width: double.infinity, height: 140, borderRadius: 20)),
+                    const SizedBox(width: 16),
+                    Expanded(child: ShimmerLoading(width: double.infinity, height: 140, borderRadius: 20)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: ShimmerLoading(width: double.infinity, height: 80, borderRadius: 16)),
+                    const SizedBox(width: 16),
+                    Expanded(child: ShimmerLoading(width: double.infinity, height: 80, borderRadius: 16)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const ShimmerLoading(width: double.infinity, height: 96, borderRadius: 16),
+              ],
+            ),
+            error: (err, _) => Center(child: Text('Error: $err')),
+            data: (stats) => ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (isAdmin) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: isDark ? 0.15 : 0.1),
+                      border: Border.all(color: Colors.orange.withValues(alpha: isDark ? 0.3 : 0.5)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: isDark ? Colors.orange[300] : Colors.orange[800], size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Admin Mode (Read-Only)',
+                            style: TextStyle(
+                              color: isDark ? Colors.orange[200] : Colors.orange[900],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Search Box trigger
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const SearchScreen(),
+                      ),
+                    );
+                  },
+                  child: _buildGlassCard(
+                    context: context,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, color: isDark ? Colors.grey[400] : Colors.grey[600], size: 24),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Search customer or product...',
+                            style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600], fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
 
             // Large main actions/stats
             Row(
@@ -119,7 +183,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: _buildActionStatCard(
                     context: context,
                     title: "Today's Sales",
-                    value: currencyFormat.format(stats.todaysSales),
+                    numericValue: stats.todaysSales,
                     gradientColors: [const Color(0xFF2E5BFF), const Color(0xFF7C4DFF)],
                     icon: Icons.trending_up,
                     onTap: () {
@@ -134,7 +198,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: _buildActionStatCard(
                     context: context,
                     title: 'Money to Collect',
-                    value: currencyFormat.format(stats.totalPendingDues),
+                    numericValue: stats.totalPendingDues,
                     gradientColors: stats.totalPendingDues > 0
                         ? [const Color(0xFFFF4D77), const Color(0xFFFF7C4D)]
                         : [const Color(0xFF43A047), const Color(0xFF66BB6A)],
@@ -181,8 +245,10 @@ class DashboardScreen extends ConsumerWidget {
 
             // Low Stock Warnings
             _buildLowStockWarningCard(context, ref, stats.lowStockCount),
-          ],
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -190,7 +256,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildActionStatCard({
     required BuildContext context,
     required String title,
-    required String value,
+    required double numericValue,
     required List<Color> gradientColors,
     required IconData icon,
     required VoidCallback onTap,
@@ -239,14 +305,19 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(
-                    value,
+                  child: AnimatedCounter(
+                    value: numericValue,
                     style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       letterSpacing: -0.5,
                     ),
+                    formatter: (val) => NumberFormat.currency(
+                      locale: 'en_IN',
+                      symbol: '₹',
+                      decimalDigits: 0,
+                    ).format(val),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -415,6 +486,36 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassCard({
+    required BuildContext context,
+    required Widget child,
+    BorderRadius? borderRadius,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final r = borderRadius ?? BorderRadius.circular(16);
+    return ClipRRect(
+      borderRadius: r,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF151824).withValues(alpha: 0.7)
+                : Colors.white.withValues(alpha: 0.75),
+            borderRadius: r,
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF20253B).withValues(alpha: 0.5)
+                  : const Color(0xFFEBEFF9).withValues(alpha: 0.8),
+              width: 1,
+            ),
+          ),
+          child: child,
         ),
       ),
     );

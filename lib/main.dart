@@ -5,7 +5,6 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/home_shell.dart';
-import 'screens/auth/login_screen.dart';
 import 'firebase_options.dart';
 
 import 'providers/auth_providers.dart';
@@ -79,24 +78,9 @@ class PapaDeskApp extends ConsumerWidget {
           titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
-      home: _AuthGate(),
+      home: const HomeShell(),
     );
   }
 }
 
-/// Watches Firebase Auth state and routes to LoginScreen or HomeShell.
-/// Shows a loading spinner while auth state initializes.
-class _AuthGate extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateProvider);
 
-    return authState.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (error, stackTrace) => const LoginScreen(),
-      data: (user) => user == null ? const LoginScreen() : const HomeShell(),
-    );
-  }
-}

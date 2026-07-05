@@ -212,33 +212,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _logout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
-    );
 
-    if (confirm == true) {
-      await FirebaseAuth.instance.signOut();
-      if (mounted) {
-        Navigator.of(context).pop(); // Back to dashboard (auth listener will reroute to login)
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -409,26 +383,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           
-          const SizedBox(height: 48),
-
-          // Log out button
-          SizedBox(
-            height: 56,
-            child: OutlinedButton.icon(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text(
-                'Log Out / Sign Out',
-                style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.red),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

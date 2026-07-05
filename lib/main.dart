@@ -60,37 +60,37 @@ class PapaDeskApp extends ConsumerWidget {
         useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E5BFF),
-          primary: const Color(0xFF2E5BFF),
-          secondary: const Color(0xFF7C4DFF),
+          seedColor: const Color(0xFFB76E79),
+          primary: const Color(0xFFB76E79), // Rose Gold
+          secondary: const Color(0xFF4A4A5A), // Platinum Charcoal
           surface: const Color(0xFFFFFFFF),
-          error: const Color(0xFFE53935),
+          error: const Color(0xFFD32F2F),
         ),
-        scaffoldBackgroundColor: const Color(0xFFF8F9FD),
+        scaffoldBackgroundColor: const Color(0xFFFAF9FA),
         cardTheme: CardThemeData(
           elevation: 0,
           color: const Color(0xFFFFFFFF),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFEBEFF9), width: 1),
+            side: const BorderSide(color: Color(0xFFF2EFF2), width: 1),
           ),
         ),
         appBarTheme: const AppBarTheme(
           elevation: 0,
-          backgroundColor: Color(0xFFF8F9FD),
+          backgroundColor: Color(0xFFFAF9FA),
           surfaceTintColor: Colors.transparent,
-          iconTheme: IconThemeData(color: Color(0xFF1E2229)),
+          iconTheme: IconThemeData(color: Color(0xFF1F1D20)),
           titleTextStyle: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1E2229),
+            color: Color(0xFF1F1D20),
             letterSpacing: -0.5,
           ),
         ),
         textTheme: const TextTheme(
-          bodyLarge: TextStyle(fontSize: 18, color: Color(0xFF1E2229), letterSpacing: -0.2),
-          bodyMedium: TextStyle(fontSize: 16, color: Color(0xFF5E6573), letterSpacing: -0.1),
-          titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E2229), letterSpacing: -0.5),
+          bodyLarge: TextStyle(fontSize: 18, color: Color(0xFF1F1D20), letterSpacing: -0.2),
+          bodyMedium: TextStyle(fontSize: 16, color: Color(0xFF6E6870), letterSpacing: -0.1),
+          titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1F1D20), letterSpacing: -0.5),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
@@ -98,15 +98,15 @@ class PapaDeskApp extends ConsumerWidget {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFEBEFF9)),
+            borderSide: const BorderSide(color: Color(0xFFF2EFF2)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFEBEFF9)),
+            borderSide: const BorderSide(color: Color(0xFFF2EFF2)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF2E5BFF), width: 1.5),
+            borderSide: const BorderSide(color: Color(0xFFB76E79), width: 1.5),
           ),
         ),
       ),
@@ -114,20 +114,20 @@ class PapaDeskApp extends ConsumerWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4D7CFF),
+          seedColor: const Color(0xFFE0A899),
           brightness: Brightness.dark,
-          primary: const Color(0xFF4D7CFF),
-          secondary: const Color(0xFF9E7CFF),
-          surface: const Color(0xFF151824),
-          error: const Color(0xFFEF5350),
+          primary: const Color(0xFFE0A899), // Metallic Rose Gold
+          secondary: const Color(0xFFD0CDE1), // Platinum Silver
+          surface: const Color(0xFF17181D), // Obsidian Slate
+          error: const Color(0xFFE57373),
         ),
-        scaffoldBackgroundColor: const Color(0xFF0C0E17),
+        scaffoldBackgroundColor: const Color(0xFF0E0F12), // Deep Obsidian Charcoal
         cardTheme: CardThemeData(
           elevation: 0,
-          color: const Color(0xFF151824),
+          color: const Color(0xFF17181D),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF20253B), width: 1),
+            side: const BorderSide(color: Color(0xFF262833), width: 1),
           ),
         ),
         appBarTheme: const AppBarTheme(

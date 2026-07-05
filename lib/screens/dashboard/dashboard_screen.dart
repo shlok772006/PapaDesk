@@ -60,7 +60,7 @@ class DashboardScreen extends ConsumerWidget {
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF2E5BFF).withValues(alpha: isDark ? 0.15 : 0.07),
+                color: const Color(0xFFB76E79).withValues(alpha: isDark ? 0.18 : 0.09),
               ),
             ),
           ),
@@ -72,7 +72,7 @@ class DashboardScreen extends ConsumerWidget {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF7C4DFF).withValues(alpha: isDark ? 0.12 : 0.05),
+                color: const Color(0xFF8E9AA6).withValues(alpha: isDark ? 0.15 : 0.08),
               ),
             ),
           ),
@@ -84,7 +84,7 @@ class DashboardScreen extends ConsumerWidget {
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFFF4D77).withValues(alpha: isDark ? 0.10 : 0.04),
+                color: const Color(0xFFD4A373).withValues(alpha: isDark ? 0.12 : 0.06),
               ),
             ),
           ),
@@ -184,7 +184,7 @@ class DashboardScreen extends ConsumerWidget {
                     context: context,
                     title: "Today's Sales",
                     numericValue: stats.todaysSales,
-                    gradientColors: [const Color(0xFF2E5BFF), const Color(0xFF7C4DFF)],
+                    gradientColors: [const Color(0xFFC58B95), const Color(0xFFE0A899)],
                     icon: Icons.trending_up,
                     onTap: () {
                       ref.read(activeTabProvider.notifier).setTab(1);
@@ -200,8 +200,8 @@ class DashboardScreen extends ConsumerWidget {
                     title: 'Money to Collect',
                     numericValue: stats.totalPendingDues,
                     gradientColors: stats.totalPendingDues > 0
-                        ? [const Color(0xFFFF4D77), const Color(0xFFFF7C4D)]
-                        : [const Color(0xFF43A047), const Color(0xFF66BB6A)],
+                        ? [const Color(0xFF8E9AA6), const Color(0xFF4A4A5A)]
+                        : [const Color(0xFF5E8B75), const Color(0xFF3C5E4F)],
                     icon: Icons.account_balance_wallet,
                     onTap: () {
                       ref.read(activeTabProvider.notifier).setTab(3);

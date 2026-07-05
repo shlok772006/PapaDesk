@@ -132,6 +132,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
         quantity: item.quantity,
         unitPrice: price,
         subtotal: price * item.quantity,
+        purchasePrice: item.product.purchasePrice,
       ));
     }
 

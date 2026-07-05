@@ -11,6 +11,7 @@ class SaleItem {
   final int quantity;
   final double unitPrice;
   final double subtotal;
+  final double purchasePrice; // Historic cost price of the product at checkout
 
   const SaleItem({
     required this.productId,
@@ -18,6 +19,7 @@ class SaleItem {
     required this.quantity,
     required this.unitPrice,
     required this.subtotal,
+    required this.purchasePrice,
   });
 
   factory SaleItem.fromMap(Map<String, dynamic> map) {
@@ -27,6 +29,8 @@ class SaleItem {
       quantity: (map['quantity'] as num?)?.toInt() ?? 0,
       unitPrice: (map['unitPrice'] as num?)?.toDouble() ?? 0,
       subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0,
+      purchasePrice: (map['purchasePrice'] as num?)?.toDouble() ?? 
+                     (map['unitCost'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -37,6 +41,7 @@ class SaleItem {
       'quantity': quantity,
       'unitPrice': unitPrice,
       'subtotal': subtotal,
+      'purchasePrice': purchasePrice,
     };
   }
 }

@@ -31,11 +31,38 @@ class PurchaseRepository {
     final purchaseDocRef = _purchasesCollection.doc();
     batch.set(purchaseDocRef, purchase.toFirestore());
 
-    // 2. Increment stock for each product.
+    // 2. Increment stock and update Weighted Average Cost for each product.
     for (final item in purchase.items) {
       final productRef = _firestore.collection('products').doc(item.productId);
+      
+      DocumentSnapshot<Map<String, dynamic>>? productSnapshot;
+      try {
+        productSnapshot = await productRef.get();
+      } catch (_) {
+        // Offline cache fallback is handled automatically by Firestore SDK
+      }
+      
+      double newAverageCost = item.unitCost;
+      if (productSnapshot != null && productSnapshot.exists) {
+        final productData = productSnapshot.data();
+        if (productData != null) {
+          final int oldStock = (productData['currentStock'] as num?)?.toInt() ?? 0;
+          final double oldCost = (productData['purchasePrice'] as num?)?.toDouble() ?? 0.0;
+          
+          if (oldStock > 0) {
+            final double totalOldValue = oldStock * oldCost;
+            final double totalNewValue = item.quantity * item.unitCost;
+            final int totalStock = oldStock + item.quantity;
+            if (totalStock > 0) {
+              newAverageCost = (totalOldValue + totalNewValue) / totalStock;
+            }
+          }
+        }
+      }
+
       batch.update(productRef, {
         'currentStock': FieldValue.increment(item.quantity),
+        'purchasePrice': newAverageCost,
       });
     }
 

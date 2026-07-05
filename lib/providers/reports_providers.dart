@@ -49,9 +49,11 @@ final reportsProvider = StreamProvider.family<ReportData, DateTimeRange>((ref, r
       revenueSum += sale.totalAmount;
 
       for (final item in sale.items) {
-        // Look up product to find current purchase price
         final product = productMap[item.productId];
-        final purchasePrice = product?.purchasePrice ?? 0.0;
+        // Use historic cost recorded on item, fallback to live product price for legacy sales
+        final purchasePrice = item.purchasePrice > 0 
+            ? item.purchasePrice 
+            : (product?.purchasePrice ?? 0.0);
         
         // Profit per item = (sellingPrice - purchasePrice) * quantity
         final itemProfit = (item.unitPrice - purchasePrice) * item.quantity;

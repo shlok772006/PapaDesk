@@ -338,27 +338,49 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildLowStockWarningCard(BuildContext context, WidgetRef ref, int lowStockCount) {
     final hasLowStock = lowStockCount > 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Resolve colors dynamically for Dark Mode support
+    final Color bgColor = hasLowStock
+        ? (isDark ? const Color(0xFF2E1C0F) : Colors.orange[50]!)
+        : (isDark ? const Color(0xFF151824) : const Color(0xFFF8F9FD));
+
+    final Color borderColor = hasLowStock
+        ? (isDark ? const Color(0xFF6E3C18) : Colors.orange[200]!)
+        : (isDark ? const Color(0xFF20253B) : const Color(0xFFEBEFF9));
+
+    final Color iconColor = hasLowStock
+        ? (isDark ? Colors.orange[300]! : Colors.orange[700]!)
+        : (isDark ? Colors.green[400]! : Colors.green[700]!);
+
+    final Color titleColor = hasLowStock
+        ? (isDark ? Colors.orange[300]! : Colors.orange[800]!)
+        : (isDark ? Colors.green[400]! : Colors.green[800]!);
+
+    final Color subtitleColor = hasLowStock
+        ? (isDark ? Colors.orange[200]! : Colors.orange[700]!)
+        : (isDark ? Colors.green[300]! : Colors.green[700]!);
 
     return Card(
       elevation: 0,
-      color: hasLowStock ? Colors.orange[50] : Colors.grey[50],
+      color: bgColor,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: hasLowStock ? Colors.orange[200]! : Colors.grey[200]!),
-        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: borderColor),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: InkWell(
         onTap: () {
           // Switch to Inventory Tab (index 4)
           ref.read(activeTabProvider.notifier).setTab(4);
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           child: Row(
             children: [
               Icon(
                 hasLowStock ? Icons.warning_amber : Icons.check_circle_outline,
-                color: hasLowStock ? Colors.orange[700] : Colors.green[700],
+                color: iconColor,
                 size: 32,
               ),
               const SizedBox(width: 16),
@@ -371,7 +393,7 @@ class DashboardScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: hasLowStock ? Colors.orange[800] : Colors.green[800],
+                        color: titleColor,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -381,7 +403,7 @@ class DashboardScreen extends ConsumerWidget {
                           : 'All items are currently above safety stock minimums.',
                       style: TextStyle(
                         fontSize: 13,
-                        color: hasLowStock ? Colors.orange[700] : Colors.green[700],
+                        color: subtitleColor,
                       ),
                     ),
                   ],
@@ -389,7 +411,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: hasLowStock ? Colors.orange[700] : Colors.green[700],
+                color: iconColor,
               ),
             ],
           ),

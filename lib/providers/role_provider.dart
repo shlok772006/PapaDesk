@@ -9,7 +9,7 @@ final isAdminProvider = FutureProvider<bool>((ref) async {
   if (user == null) return false;
   
   try {
-    final idTokenResult = await user.getIdTokenResult(true);
+    final idTokenResult = await user.getIdTokenResult(false); // Use cached token — works offline
     final role = idTokenResult.claims?['role'] as String?;
     return role == 'admin';
   } catch (_) {

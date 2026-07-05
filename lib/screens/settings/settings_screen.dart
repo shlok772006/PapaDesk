@@ -55,11 +55,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() => _saving = true);
 
     try {
-      await _userDocRef.set({
+      _userDocRef.set({
         'businessName': _nameController.text.trim(),
         'businessPhone': _phoneController.text.trim(),
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      }, SetOptions(merge: true)).catchError((e) {});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -12,8 +12,10 @@ class SupplierRepository {
   }
 
   /// Creates a new supplier.
+  /// Uses fire-and-forget pattern for offline compatibility (AGENTS.md constraint #2).
   Future<String> addSupplier(Supplier supplier) async {
-    final docRef = await _collection.add(supplier.toFirestore());
+    final docRef = _collection.doc();
+    docRef.set(supplier.toFirestore()).catchError((e) {});
     return docRef.id;
   }
 
@@ -35,11 +37,11 @@ class SupplierRepository {
 
   /// Updates supplier details.
   Future<void> updateSupplier(String id, Map<String, dynamic> fields) async {
-    await _collection.doc(id).update(fields);
+    _collection.doc(id).update(fields).catchError((e) {});
   }
 
   /// Deletes a supplier.
   Future<void> deleteSupplier(String id) async {
-    await _collection.doc(id).delete();
+    _collection.doc(id).delete().catchError((e) {});
   }
 }

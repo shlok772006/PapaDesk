@@ -139,6 +139,12 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
     final paidAmountText = _paidController.text.trim();
     final paidAmount = paidAmountText.isEmpty ? total : (double.tryParse(paidAmountText) ?? 0.0);
 
+    // M5 fix: Reject negative paid amounts
+    if (paidAmount < 0) {
+      _showError('Amount paid cannot be negative');
+      return;
+    }
+
     setState(() => _saving = true);
 
     final saleRepo = ref.read(saleRepositoryProvider);

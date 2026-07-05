@@ -17,6 +17,7 @@ class Product {
   final int currentStock;
   final int minStock;
   final String? imageBase64; // Base64 Data URL for optional product image
+  final bool hasPendingWrites;
 
   const Product({
     required this.id,
@@ -28,10 +29,13 @@ class Product {
     this.currentStock = 0,
     this.minStock = 0,
     this.imageBase64,
+    this.hasPendingWrites = false,
   });
 
   /// Whether this product is below its minimum stock threshold.
-  bool get isLowStock => currentStock <= minStock;
+  /// Only flags if minStock is configured (> 0), so new products with default
+  /// values (0/0) don't appear as low-stock warnings. (M12 fix)
+  bool get isLowStock => minStock > 0 && currentStock < minStock;
 
   /// Creates a Product from a Firestore document snapshot.
   factory Product.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -46,6 +50,7 @@ class Product {
       currentStock: (data['currentStock'] as num?)?.toInt() ?? 0,
       minStock: (data['minStock'] as num?)?.toInt() ?? 0,
       imageBase64: data['imageBase64'] as String?,
+      hasPendingWrites: doc.metadata.hasPendingWrites,
     );
   }
 

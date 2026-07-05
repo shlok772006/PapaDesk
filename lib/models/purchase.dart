@@ -39,6 +39,7 @@ class Purchase {
   final List<PurchaseItem> items;
   final double totalCost;
   final String createdBy;
+  final bool hasPendingWrites;
 
   const Purchase({
     required this.id,
@@ -47,6 +48,7 @@ class Purchase {
     required this.items,
     required this.totalCost,
     required this.createdBy,
+    this.hasPendingWrites = false,
   });
 
   factory Purchase.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -63,6 +65,7 @@ class Purchase {
           [],
       totalCost: (data['totalCost'] as num?)?.toDouble() ?? 0,
       createdBy: data['createdBy'] as String? ?? '',
+      hasPendingWrites: doc.metadata.hasPendingWrites,
     );
   }
 

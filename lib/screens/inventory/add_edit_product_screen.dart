@@ -269,8 +269,12 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
               style: const TextStyle(fontSize: 18),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: (value) {
-                if (value == null || double.tryParse(value) == null) {
+                if (value == null || value.trim().isEmpty) {
                   return 'Enter a price';
+                }
+                final val = double.tryParse(value);
+                if (val == null || val < 0) {
+                  return 'Enter a valid price (₹0 or more)';
                 }
                 return null;
               },
@@ -293,6 +297,15 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                     ),
                     style: const TextStyle(fontSize: 18),
                     keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty) {
+                        final val = int.tryParse(value);
+                        if (val == null || val < 0) {
+                          return 'Enter 0 or more';
+                        }
+                      }
+                      return null;
+                    },
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -311,6 +324,18 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                     ),
                     style: const TextStyle(fontSize: 18),
                     keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (!isEdit) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Enter stock';
+                        }
+                        final val = int.tryParse(value);
+                        if (val == null || val < 0) {
+                          return 'Enter 0 or more';
+                        }
+                      }
+                      return null;
+                    },
                   ),
                 ),
               ],

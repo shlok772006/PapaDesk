@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/purchase.dart';
+import '../../models/supplier.dart';
 import '../../providers/repository_providers.dart';
 import '../../providers/supplier_providers.dart';
 import '../../providers/role_provider.dart';
@@ -113,7 +114,17 @@ class _PurchaseTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final supplierAsync = ref.watch(supplierFutureProvider(purchase.supplierId));
+    final suppliersAsync = ref.watch(suppliersProvider);
+    final supplierName = suppliersAsync.maybeWhen(
+      data: (list) {
+        final supplier = list.firstWhere(
+          (s) => s.id == purchase.supplierId,
+          orElse: () => Supplier(id: '', name: 'Unknown Supplier', phone: ''),
+        );
+        return supplier.name;
+      },
+      orElse: () => 'Loading...',
+    );
     final totalQty = purchase.items.fold<int>(0, (sum, item) => sum + item.quantity);
 
     return Card(
@@ -133,15 +144,9 @@ class _PurchaseTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Supplier Name
-                  supplierAsync.when(
-                    loading: () => const Text('Loading...',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                    error: (err, stack) => const Text('Supplier Error',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                    data: (supplier) => Text(
-                      supplier?.name ?? 'Unknown Supplier',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
+                  Text(
+                    supplierName,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   Text(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/payment_providers.dart';
 import '../../providers/role_provider.dart';
+import '../../widgets/sync_indicator.dart';
 import 'new_payment_screen.dart';
 
 /// Shows unified cash transactions ( ledger dues payments, sales payments, and product purchases).
@@ -107,10 +108,18 @@ class PaymentsScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 6),
-                                Text(
-                                  '•  ${dateFormat.format(tx.date)}',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                                Expanded(
+                                  child: Text(
+                                    '•  ${dateFormat.format(tx.date)}',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
+                                if (tx.hasPendingWrites) ...[
+                                  const SizedBox(width: 6),
+                                  SyncIndicator(hasPendingWrites: true),
+                                ],
                               ],
                             ),
                             const SizedBox(height: 4),

@@ -13,8 +13,16 @@ import 'onboarding/onboarding_overlay.dart';
 /// The main scaffold with bottom navigation bar.
 /// Hosts the tab screens: Dashboard, Sales, Payments, Ledger, Inventory.
 /// Navigation state is managed globally via [activeTabProvider].
-class HomeShell extends ConsumerWidget {
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
+
+  @override
+  ConsumerState<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends ConsumerState<HomeShell> {
+  /// Local flag so onboarding dismisses instantly without waiting for Firestore sync (H8 fix).
+  bool _onboardingDismissed = false;
 
   final _screens = const [
     DashboardScreen(),
@@ -25,12 +33,12 @@ class HomeShell extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(activeTabProvider);
     final profileAsync = ref.watch(userProfileProvider);
     
     // Check if onboarding needs to be shown (default to false if loading/error)
-    final showOnboarding = profileAsync.maybeWhen(
+    final showOnboarding = !_onboardingDismissed && profileAsync.maybeWhen(
       data: (data) => data == null || !(data['onboarded'] as bool? ?? false),
       orElse: () => false,
     );
@@ -88,7 +96,8 @@ class HomeShell extends ConsumerWidget {
           ),
           OnboardingOverlay(
             onDismiss: () {
-              // Dismiss trigger is handled reactively by the Firestore update stream
+              // Dismiss immediately via local state — Firestore write is fire-and-forget
+              setState(() => _onboardingDismissed = true);
             },
           ),
         ],

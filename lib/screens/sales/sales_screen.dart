@@ -7,6 +7,7 @@ import '../../providers/sale_providers.dart';
 import '../../providers/customer_providers.dart';
 import '../../providers/repository_providers.dart';
 import '../../providers/role_provider.dart';
+import '../../widgets/sync_indicator.dart';
 import 'new_sale_screen.dart';
 
 /// Shows today's sales with a FAB to record a new sale.
@@ -351,17 +352,18 @@ class _SaleTile extends ConsumerWidget {
     final customerName = customer.name;
     final customerPending = customer.pendingAmount;
 
-    // Calculate sale-specific remaining dues dynamically
-    final originalDue = sale.balanceDue;
-    final isSalePaid = originalDue <= 0 || customerPending <= 0;
-    final displayDues = isSalePaid ? 0.0 : (originalDue < customerPending ? originalDue : customerPending);
+    // C4 fix: Show each sale's own balanceDue independently.
+    // Don't cross-reference with customer.pendingAmount — that caused
+    // "cross-contamination" where paid sales showed dues from other sales.
+    final saleDue = sale.balanceDue;
+    final isSalePaid = saleDue <= 0;
 
     final itemsSummary = sale.items.map((i) => '${i.productName} ×${i.quantity}').join(', ');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: () => _showSaleDetails(context, ref, customerName, displayDues, customerPending),
+        onTap: () => _showSaleDetails(context, ref, customerName, saleDue, customerPending),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -373,13 +375,25 @@ class _SaleTile extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Buyer Name
-                    Text(
-                      customerName,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            customerName,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (sale.hasPendingWrites) ...[
+                          const SizedBox(width: 8),
+                          SyncIndicator(hasPendingWrites: true),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     // Product Summary
@@ -426,7 +440,7 @@ class _SaleTile extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      isSalePaid ? 'Paid' : 'Dues: ${currencyFormat.format(displayDues)}',
+                      isSalePaid ? 'Paid' : 'Unpaid: ${currencyFormat.format(saleDue)}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,

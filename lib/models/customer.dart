@@ -14,6 +14,7 @@ class Customer {
   final double totalPurchases;
   final double pendingAmount;
   final DateTime createdAt;
+  final bool hasPendingWrites;
 
   const Customer({
     required this.id,
@@ -23,6 +24,7 @@ class Customer {
     this.totalPurchases = 0,
     this.pendingAmount = 0,
     required this.createdAt,
+    this.hasPendingWrites = false,
   });
 
   /// Creates a Customer from a Firestore document snapshot.
@@ -36,6 +38,7 @@ class Customer {
       totalPurchases: (data['totalPurchases'] as num?)?.toDouble() ?? 0,
       pendingAmount: (data['pendingAmount'] as num?)?.toDouble() ?? 0,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      hasPendingWrites: doc.metadata.hasPendingWrites,
     );
   }
 
@@ -49,7 +52,7 @@ class Customer {
       'address': address,
       'totalPurchases': 0,
       'pendingAmount': 0,
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': Timestamp.fromDate(DateTime.now()), // Device clock — works offline (H7 fix)
     };
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/payment.dart';
 import '../models/sale.dart';
@@ -18,6 +19,7 @@ class CashTransaction {
   final double amount;
   final TransactionType type;
   final String subtitle;
+  final bool hasPendingWrites;
 
   CashTransaction({
     required this.id,
@@ -27,6 +29,7 @@ class CashTransaction {
     required this.amount,
     required this.type,
     required this.subtitle,
+    this.hasPendingWrites = false,
   });
 }
 
@@ -38,10 +41,13 @@ final customerPaymentsProvider =
 });
 
 /// Stream providers for last 30 days.
+/// Auto-invalidate every 60 seconds so the date window stays fresh (C3 fix).
 final recentPaymentsStreamProvider = StreamProvider<List<Payment>>((ref) {
   final repo = ref.watch(paymentRepositoryProvider);
   final now = DateTime.now();
   final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+  final timer = Timer(const Duration(seconds: 60), () => ref.invalidateSelf());
+  ref.onDispose(timer.cancel);
   return repo.getPaymentsForDateRange(thirtyDaysAgo, now);
 });
 
@@ -49,6 +55,8 @@ final recentSalesStreamProvider = StreamProvider<List<Sale>>((ref) {
   final repo = ref.watch(saleRepositoryProvider);
   final now = DateTime.now();
   final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+  final timer = Timer(const Duration(seconds: 60), () => ref.invalidateSelf());
+  ref.onDispose(timer.cancel);
   return repo.getSalesForDateRange(thirtyDaysAgo, now);
 });
 
@@ -56,6 +64,8 @@ final recentPurchasesStreamProvider = StreamProvider<List<Purchase>>((ref) {
   final repo = ref.watch(purchaseRepositoryProvider);
   final now = DateTime.now();
   final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+  final timer = Timer(const Duration(seconds: 60), () => ref.invalidateSelf());
+  ref.onDispose(timer.cancel);
   return repo.getPurchasesForDateRange(thirtyDaysAgo, now);
 });
 
@@ -100,6 +110,7 @@ final recentTransactionsProvider = Provider<AsyncValue<List<CashTransaction>>>((
       amount: p.amount,
       type: TransactionType.payment,
       subtitle: 'Method: ${p.method.toUpperCase()}',
+      hasPendingWrites: p.hasPendingWrites,
     ));
   }
 
@@ -119,6 +130,7 @@ final recentTransactionsProvider = Provider<AsyncValue<List<CashTransaction>>>((
         amount: s.paidAmount,
         type: TransactionType.sale,
         subtitle: itemsSummary,
+        hasPendingWrites: s.hasPendingWrites,
       ));
     }
   }
@@ -140,6 +152,7 @@ final recentTransactionsProvider = Provider<AsyncValue<List<CashTransaction>>>((
       amount: -pur.totalCost, // Negative for cash outflow!
       type: TransactionType.purchase,
       subtitle: itemsSummary,
+      hasPendingWrites: pur.hasPendingWrites,
     ));
   }
 

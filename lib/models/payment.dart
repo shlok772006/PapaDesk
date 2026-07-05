@@ -12,6 +12,7 @@ class Payment {
   final DateTime paymentDate;
   final String method;
   final String createdBy;
+  final bool hasPendingWrites;
 
   const Payment({
     required this.id,
@@ -21,6 +22,7 @@ class Payment {
     required this.paymentDate,
     this.method = 'cash',
     required this.createdBy,
+    this.hasPendingWrites = false,
   });
 
   factory Payment.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -34,6 +36,7 @@ class Payment {
           (data['paymentDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       method: data['method'] as String? ?? 'cash',
       createdBy: data['createdBy'] as String? ?? '',
+      hasPendingWrites: doc.metadata.hasPendingWrites,
     );
   }
 

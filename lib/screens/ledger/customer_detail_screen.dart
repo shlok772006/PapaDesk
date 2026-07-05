@@ -7,6 +7,8 @@ import '../../models/sale.dart';
 import '../../models/payment.dart';
 import '../../providers/customer_providers.dart';
 import '../../providers/repository_providers.dart';
+import '../../providers/role_provider.dart';
+import '../../widgets/sync_indicator.dart';
 import '../payments/new_payment_screen.dart';
 import 'add_edit_customer_screen.dart';
 
@@ -150,21 +152,23 @@ class CustomerDetailScreen extends ConsumerWidget {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            heroTag: 'customer_detail_fab',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => NewPaymentScreen(customer: customer),
+          floatingActionButton: (ref.watch(isAdminProvider).value ?? false)
+              ? null
+              : FloatingActionButton.extended(
+                  heroTag: 'customer_detail_fab',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => NewPaymentScreen(customer: customer),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add_card),
+                  label: const Text(
+                    'Record Payment',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
-              );
-            },
-            icon: const Icon(Icons.add_card),
-            label: const Text(
-              'Record Payment',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
         );
       },
     );
@@ -345,9 +349,18 @@ class CustomerDetailScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Text(
-                  dateFormat.format(sale.saleDate),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      dateFormat.format(sale.saleDate),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                    if (sale.hasPendingWrites) ...[
+                      const SizedBox(width: 8),
+                      SyncIndicator(hasPendingWrites: true),
+                    ],
+                  ],
                 ),
               ],
             ),
@@ -442,9 +455,18 @@ class CustomerDetailScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Text(
-                  dateFormat.format(payment.paymentDate),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      dateFormat.format(payment.paymentDate),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                    if (payment.hasPendingWrites) ...[
+                      const SizedBox(width: 8),
+                      SyncIndicator(hasPendingWrites: true),
+                    ],
+                  ],
                 ),
               ],
             ),

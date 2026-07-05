@@ -55,6 +55,7 @@ class Sale {
   final double totalAmount;
   final double paidAmount;
   final String createdBy;
+  final bool hasPendingWrites;
 
   const Sale({
     required this.id,
@@ -64,6 +65,7 @@ class Sale {
     required this.totalAmount,
     required this.paidAmount,
     required this.createdBy,
+    this.hasPendingWrites = false,
   });
 
   /// The remaining balance the customer owes for this sale.
@@ -82,6 +84,7 @@ class Sale {
       totalAmount: (data['totalAmount'] as num?)?.toDouble() ?? 0,
       paidAmount: (data['paidAmount'] as num?)?.toDouble() ?? 0,
       createdBy: data['createdBy'] as String? ?? '',
+      hasPendingWrites: doc.metadata.hasPendingWrites,
     );
   }
 

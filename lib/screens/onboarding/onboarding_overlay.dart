@@ -43,10 +43,11 @@ class _OnboardingOverlayState extends State<OnboardingOverlay> {
 
   Future<void> _finishOnboarding() async {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
-    // Save onboarded state on Firestore (works offline, queues locally)
-    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+    // Fire-and-forget: save onboarded state (queues offline, syncs later).
+    // Don't await — dismiss overlay immediately via local state (H8 fix).
+    FirebaseFirestore.instance.collection('users').doc(uid).set({
       'onboarded': true,
-    }, SetOptions(merge: true));
+    }, SetOptions(merge: true)).catchError((e) {});
     widget.onDismiss();
   }
 

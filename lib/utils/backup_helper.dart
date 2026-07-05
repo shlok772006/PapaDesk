@@ -30,14 +30,14 @@ class BackupHelper {
     return value;
   }
 
-  /// Generates a Base64-encoded backup code of all Firestore documents in local cache.
+  /// Generates a Base64-encoded backup code of all Firestore documents.
   static Future<String> generateBackupCode() async {
     final db = FirebaseFirestore.instance;
-    const cacheOptions = GetOptions(source: Source.cache);
 
     Future<List<Map<String, dynamic>>> getCollectionData(String name) async {
       try {
-        final snap = await db.collection(name).get(cacheOptions);
+        // Fetches from server if online, automatically falls back to cache if offline
+        final snap = await db.collection(name).get();
         return snap.docs.map((doc) {
           final data = doc.data();
           data['id'] = doc.id; // Embed document ID so it can be restored exactly

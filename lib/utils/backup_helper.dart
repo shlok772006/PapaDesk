@@ -95,14 +95,14 @@ class BackupHelper {
 
         count++;
         if (count >= 400) {
-          await batch.commit().catchError((_) {});
+          await batch.commit();
           batch = db.batch();
           count = 0;
         }
       }
 
       if (count > 0) {
-        await batch.commit().catchError((_) {});
+        await batch.commit();
       }
     }
 

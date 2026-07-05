@@ -4,6 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import '../../providers/auth_providers.dart';
+import '../../providers/customer_providers.dart';
+import '../../providers/product_providers.dart';
+import '../../providers/supplier_providers.dart';
+import '../../providers/sale_providers.dart';
+import '../../providers/payment_providers.dart';
 import '../../utils/backup_helper.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -193,6 +198,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       await BackupHelper.restoreBackupCode(controller.text);
       if (!mounted) return;
+      
+      // Force refresh all stream providers with restored cache records
+      ref.invalidate(customersProvider);
+      ref.invalidate(productsProvider);
+      ref.invalidate(suppliersProvider);
+      ref.invalidate(todaysSalesProvider);
+      ref.invalidate(recentTransactionsProvider);
+
       Navigator.pop(context); // close loader
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -204,8 +217,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (!mounted) return;
       Navigator.pop(context); // close loader
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Restore failed: Invalid backup code format.'),
+        SnackBar(
+          content: Text('Restore failed: $e'),
           backgroundColor: Colors.red,
         ),
       );

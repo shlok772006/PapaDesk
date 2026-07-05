@@ -7,6 +7,7 @@ import 'ledger/ledger_screen.dart';
 import 'inventory/inventory_screen.dart';
 import 'dashboard/dashboard_screen.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/auth_providers.dart';
 import 'onboarding/onboarding_overlay.dart';
 
@@ -23,6 +24,23 @@ class HomeShell extends ConsumerStatefulWidget {
 class _HomeShellState extends ConsumerState<HomeShell> {
   /// Local flag so onboarding dismisses instantly without waiting for Firestore sync (H8 fix).
   bool _onboardingDismissed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Silent anonymous auth in the background to ensure Firestore rules are satisfied
+    _initSilentAuth();
+  }
+
+  Future<void> _initSilentAuth() async {
+    if (FirebaseAuth.instance.currentUser == null) {
+      try {
+        await FirebaseAuth.instance.signInAnonymously();
+      } catch (e) {
+        debugPrint('Silent anonymous sign-in failed: $e');
+      }
+    }
+  }
 
   final _screens = const [
     DashboardScreen(),

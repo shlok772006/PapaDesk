@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../models/customer.dart';
+import '../../models/product.dart';
 import '../../providers/customer_providers.dart';
 import '../../providers/product_providers.dart';
 import '../ledger/customer_detail_screen.dart';
@@ -146,7 +148,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildCustomerTile(dynamic customer) {
+  Widget _buildCustomerTile(Customer customer) {
     final hasPending = customer.pendingAmount > 0;
 
     return ListTile(
@@ -192,7 +194,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildProductTile(dynamic product) {
+  Widget _buildProductTile(Product product) {
     final isLow = product.isLowStock;
 
     return ListTile(

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import '../../providers/auth_providers.dart';
+import '../../utils/backup_helper.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -80,6 +82,133 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _exportBackup() async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Generating backup code...'),
+            ],
+          ),
+        ),
+      );
+      
+      final code = await BackupHelper.generateBackupCode();
+      if (!mounted) return;
+      
+      Navigator.pop(context); // close loader
+      await Clipboard.setData(ClipboardData(text: code));
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Backup code copied to clipboard ✓ Share it via WhatsApp/Email to save it.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // close loader
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _importBackup() async {
+    final controller = TextEditingController();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Restore Database?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Pasting a backup code will restore historical sales, customers, and inventory configurations.\n\n'
+              'Warning: This may overwrite existing data if the IDs match.',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              maxLines: 5,
+              decoration: InputDecoration(
+                hintText: 'Paste the backup code here...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (controller.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please paste a backup code'), backgroundColor: Colors.red),
+                );
+                return;
+              }
+              Navigator.pop(dialogCtx, true);
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.orange[800]),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Restoring database cache...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await BackupHelper.restoreBackupCode(controller.text);
+      if (!mounted) return;
+      Navigator.pop(context); // close loader
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Database restored successfully! ✓ All data loaded.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // close loader
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Restore failed: Invalid backup code format.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -241,6 +370,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onChanged: (val) {
                 ref.read(themeModeProvider.notifier).toggleTheme();
               },
+            ),
+          ),
+          
+          const SizedBox(height: 32),
+
+          // Data Backup & Recovery section
+          const Text(
+            'Data Backup & Recovery',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+          ),
+          const SizedBox(height: 12),
+
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Icon(Icons.backup, color: Theme.of(context).colorScheme.primary),
+                  title: const Text('Export Backup Code', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Copies your offline database text code to the clipboard.', style: TextStyle(fontSize: 13)),
+                  onTap: _exportBackup,
+                  trailing: const Icon(Icons.chevron_right),
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: Icon(Icons.settings_backup_restore, color: Colors.orange[800]),
+                  title: const Text('Restore Backup Code', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Pasts a backup code to restore your local database.', style: TextStyle(fontSize: 13)),
+                  onTap: _importBackup,
+                  trailing: const Icon(Icons.chevron_right),
+                ),
+              ],
             ),
           ),
           

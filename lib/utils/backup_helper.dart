@@ -1,0 +1,117 @@
+import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class BackupHelper {
+  /// Recursively converts Firestore Timestamps to epoch milliseconds for JSON serialization.
+  static dynamic _serializeValue(dynamic value) {
+    if (value is Timestamp) {
+      return value.millisecondsSinceEpoch;
+    } else if (value is Map) {
+      return value.map((k, v) => MapEntry(k, _serializeValue(v)));
+    } else if (value is List) {
+      return value.map((v) => _serializeValue(v)).toList();
+    }
+    return value;
+  }
+
+  /// Recursively converts epoch milliseconds back to Firestore Timestamps for fields matching date keys.
+  static dynamic _deserializeValue(dynamic key, dynamic value) {
+    if (value is int &&
+        (key is String) &&
+        (key.toLowerCase().contains('date') ||
+            key.toLowerCase().contains('createdat') ||
+            key.toLowerCase().contains('updatedat'))) {
+      return Timestamp.fromMillisecondsSinceEpoch(value);
+    } else if (value is Map) {
+      return value.map((k, v) => MapEntry(k, _deserializeValue(k, v)));
+    } else if (value is List) {
+      return value.map((v) => _deserializeValue(key, v)).toList();
+    }
+    return value;
+  }
+
+  /// Generates a Base64-encoded backup code of all Firestore documents in local cache.
+  static Future<String> generateBackupCode() async {
+    final db = FirebaseFirestore.instance;
+    const cacheOptions = GetOptions(source: Source.cache);
+
+    Future<List<Map<String, dynamic>>> getCollectionData(String name) async {
+      try {
+        final snap = await db.collection(name).get(cacheOptions);
+        return snap.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id; // Embed document ID so it can be restored exactly
+          return _serializeValue(data) as Map<String, dynamic>;
+        }).toList();
+      } catch (_) {
+        return [];
+      }
+    }
+
+    final backupMap = {
+      'version': 1,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'customers': await getCollectionData('customers'),
+      'products': await getCollectionData('products'),
+      'sales': await getCollectionData('sales'),
+      'payments': await getCollectionData('payments'),
+      'purchases': await getCollectionData('purchases'),
+      'suppliers': await getCollectionData('suppliers'),
+    };
+
+    final jsonStr = jsonEncode(backupMap);
+    final bytes = utf8.encode(jsonStr);
+    return base64Encode(bytes);
+  }
+
+  /// Restores collections in batch sets using local-first writes from decoded Base64 code.
+  static Future<void> restoreBackupCode(String base64Code) async {
+    final trimmed = base64Code.trim().replaceAll('\n', '').replaceAll('\r', '').replaceAll(' ', '');
+    final bytes = base64Decode(trimmed);
+    final jsonStr = utf8.decode(bytes);
+    final Map<String, dynamic> backupMap = jsonDecode(jsonStr);
+
+    if (backupMap['version'] != 1) {
+      throw Exception('Invalid or unsupported backup code version');
+    }
+
+    final db = FirebaseFirestore.instance;
+
+    Future<void> restoreCollection(String collectionName, List<dynamic> list) async {
+      if (list.isEmpty) return;
+
+      var batch = db.batch();
+      var count = 0;
+
+      for (final item in list) {
+        final rawMap = Map<String, dynamic>.from(item as Map);
+        final id = rawMap.remove('id') as String;
+
+        // Deserialize date/timestamp fields recursively
+        final data = rawMap.map((k, v) => MapEntry(k, _deserializeValue(k, v)));
+
+        final docRef = db.collection(collectionName).doc(id);
+        batch.set(docRef, data, SetOptions(merge: true));
+
+        count++;
+        if (count >= 400) {
+          await batch.commit().catchError((_) {});
+          batch = db.batch();
+          count = 0;
+        }
+      }
+
+      if (count > 0) {
+        await batch.commit().catchError((_) {});
+      }
+    }
+
+    // Restore collections
+    await restoreCollection('customers', backupMap['customers'] ?? []);
+    await restoreCollection('products', backupMap['products'] ?? []);
+    await restoreCollection('suppliers', backupMap['suppliers'] ?? []);
+    await restoreCollection('sales', backupMap['sales'] ?? []);
+    await restoreCollection('payments', backupMap['payments'] ?? []);
+    await restoreCollection('purchases', backupMap['purchases'] ?? []);
+  }
+}

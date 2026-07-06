@@ -16,7 +16,6 @@ class InvoiceHelper {
 
     final roseGoldColor = PdfColor.fromHex('#B76E79');
     final charcoalColor = PdfColor.fromHex('#2E2E3A');
-    final lightGreyColor = PdfColor.fromHex('#F4F4F6');
 
     pdf.addPage(
       pw.Page(
@@ -34,7 +33,7 @@ class InvoiceHelper {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        'PAPADESK',
+                        'INVOICE',
                         style: pw.TextStyle(
                           fontSize: 28,
                           fontWeight: pw.FontWeight.bold,
@@ -55,18 +54,11 @@ class InvoiceHelper {
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
                       pw.Text(
-                        'INVOICE',
-                        style: pw.TextStyle(
-                          fontSize: 24,
-                          fontWeight: pw.FontWeight.bold,
-                          color: roseGoldColor,
-                        ),
-                      ),
-                      pw.Text(
                         'ID: ${sale.id.substring(0, sale.id.length.clamp(0, 8))}',
                         style: pw.TextStyle(
-                          fontSize: 11,
-                          color: PdfColors.grey700,
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: charcoalColor,
                         ),
                       ),
                     ],
@@ -129,11 +121,6 @@ class InvoiceHelper {
                           'Date: ${_dateFormat.format(sale.saleDate)}',
                           style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
                         ),
-                        pw.SizedBox(height: 2),
-                        pw.Text(
-                          'Operator: ${sale.createdBy.substring(0, sale.createdBy.length.clamp(0, 8))}',
-                          style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
-                        ),
                       ],
                     ),
                   ),
@@ -142,14 +129,18 @@ class InvoiceHelper {
               pw.SizedBox(height: 32),
 
               // Items Table
-              pw.TableHelper.fromTextArray(
+               pw.TableHelper.fromTextArray(
                 border: const pw.TableBorder(
                   bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  top: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  left: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  right: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
                   horizontalInside: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  verticalInside: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
                 ),
                 headerStyle: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.white,
+                  color: charcoalColor,
                   fontSize: 12,
                 ),
                 headers: ['Product Name', 'Price', 'Qty', 'Total'],
@@ -167,14 +158,9 @@ class InvoiceHelper {
                   2: pw.Alignment.center,
                   3: pw.Alignment.centerRight,
                 },
-                cellStyle: const pw.TextStyle(fontSize: 11),
+                cellStyle: pw.TextStyle(fontSize: 11, color: charcoalColor),
                 cellDecoration: (int rowIndex, dynamic cellValue, int colIndex) {
-                  if (rowIndex == 0) {
-                    return pw.BoxDecoration(color: charcoalColor);
-                  }
-                  return pw.BoxDecoration(
-                    color: rowIndex % 2 == 0 ? lightGreyColor : PdfColors.white,
-                  );
+                  return const pw.BoxDecoration(color: PdfColors.white);
                 },
               ),
               pw.SizedBox(height: 24),
@@ -241,7 +227,7 @@ class InvoiceHelper {
               ),
               pw.Center(
                 child: pw.Text(
-                  'PapaDesk Ledger App — Fast, Secure, and Offline-First',
+                  'Smart Business Ledger — Fast, Secure, and Offline-First',
                   style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
                 ),
               ),
@@ -257,7 +243,7 @@ class InvoiceHelper {
   /// Generates a clean text receipt optimized for WhatsApp inline messages.
   static String generateShareableText(Sale sale, Customer customer) {
     final buffer = StringBuffer();
-    buffer.writeln('*📄 PAPADESK INVOICE*');
+    buffer.writeln('*📄 RETAIL RECEIPT*');
     buffer.writeln('------------------------------------------');
     buffer.writeln('*Date:* ${_dateFormat.format(sale.saleDate)}');
     buffer.writeln('*Customer:* ${customer.name}');
@@ -294,7 +280,7 @@ class InvoiceHelper {
     final text = generateShareableText(sale, customer);
     await Share.share(
       text,
-      subject: 'PapaDesk Receipt — ${customer.name}',
+      subject: 'Receipt — ${customer.name}',
     );
   }
 }

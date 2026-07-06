@@ -51,11 +51,20 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
   }
 
   void _addProduct(Product product) {
+    if (product.currentStock <= 0) {
+      _showError('"${product.name}" is out of stock!');
+      return;
+    }
     // Check if already in cart
     final existingIndex = _cartItems.indexWhere((item) => item.product.id == product.id);
     if (existingIndex >= 0) {
+      final existingItem = _cartItems[existingIndex];
+      if (existingItem.quantity >= product.currentStock) {
+        _showError('Cannot add more. Only ${product.currentStock} in stock!');
+        return;
+      }
       setState(() {
-        _cartItems[existingIndex].quantity++;
+        existingItem.quantity++;
       });
     } else {
       setState(() {
@@ -124,6 +133,10 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       final price = double.tryParse(priceText) ?? 0.0;
       if (price <= 0) {
         _showError('Please enter a valid price for ${item.product.name}');
+        return;
+      }
+      if (item.quantity > item.product.currentStock) {
+        _showError('Not enough stock for "${item.product.name}". Only ${item.product.currentStock} available.');
         return;
       }
       items.add(SaleItem(
@@ -344,6 +357,10 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                                   ),
                                   IconButton(
                                     onPressed: () {
+                                      if (item.quantity >= item.product.currentStock) {
+                                        _showError('Only ${item.product.currentStock} pcs available in stock!');
+                                        return;
+                                      }
                                       setState(() => item.quantity++);
                                     },
                                     icon: const Icon(Icons.add),

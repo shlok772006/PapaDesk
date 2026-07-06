@@ -9,6 +9,8 @@ import '../../providers/repository_providers.dart';
 import '../../providers/role_provider.dart';
 import '../../widgets/sync_indicator.dart';
 import 'new_sale_screen.dart';
+import 'package:printing/printing.dart';
+import '../../utils/invoice_helper.dart';
 
 /// Shows today's sales with a FAB to record a new sale.
 class SalesScreen extends ConsumerWidget {
@@ -158,7 +160,7 @@ class _SaleTile extends ConsumerWidget {
   void _showSaleDetails(
     BuildContext context,
     WidgetRef ref,
-    String customerName,
+    Customer customer,
     double saleDues,
     double customerDues,
   ) {
@@ -200,7 +202,7 @@ class _SaleTile extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Buyer: $customerName',
+                    'Buyer: ${customer.name}',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
@@ -284,6 +286,56 @@ class _SaleTile extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child: FilledButton.icon(
+                            onPressed: () async {
+                              try {
+                                final pdfBytes = await InvoiceHelper.generateInvoicePdf(sale, customer);
+                                await Printing.sharePdf(
+                                  bytes: pdfBytes,
+                                  filename: 'Invoice-${sale.id.substring(0, sale.id.length.clamp(0, 8))}.pdf',
+                                );
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error generating PDF: $e'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.picture_as_pdf),
+                            label: const Text('Share PDF', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              try {
+                                await InvoiceHelper.shareTextReceipt(sale, customer);
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error sharing text: $e'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.chat_outlined),
+                            label: const Text('Share Text', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   if (!isAdmin) ...[
                     const SizedBox(height: 24),
                     SizedBox(
@@ -363,7 +415,7 @@ class _SaleTile extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: () => _showSaleDetails(context, ref, customerName, saleDue, customerPending),
+        onTap: () => _showSaleDetails(context, ref, customer, saleDue, customerPending),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),

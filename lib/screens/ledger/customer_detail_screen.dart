@@ -11,6 +11,8 @@ import '../../providers/role_provider.dart';
 import '../../widgets/sync_indicator.dart';
 import '../payments/new_payment_screen.dart';
 import 'add_edit_customer_screen.dart';
+import 'package:printing/printing.dart';
+import '../../utils/invoice_helper.dart';
 
 class CustomerDetailScreen extends ConsumerWidget {
   final String customerId;
@@ -78,79 +80,77 @@ class CustomerDetailScreen extends ConsumerWidget {
               ),
             ],
           ),
-          body: Column(
-            children: [
-              // Summary Header Card
-              _buildHeaderCard(context, customer, currencyFormat),
+          body: ledgerAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(
+              child: Text('Error loading history: $error'),
+            ),
+            data: (entries) {
+              return Column(
+                children: [
+                  // Summary Header Card
+                  _buildHeaderCard(context, customer, currencyFormat),
 
-              // Quick Actions Bar
-              _buildActionsBar(context, customer),
+                  // Quick Actions Bar
+                  _buildActionsBar(context, customer, entries),
 
-              const Divider(height: 1),
+                  const Divider(height: 1),
 
-              // Transaction Ledger Timeline Title
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.history, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Ledger History',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Chronological Ledger History
-              Expanded(
-                child: ledgerAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(
-                    child: Text('Error loading history: $error'),
-                  ),
-                  data: (entries) {
-                    if (entries.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.receipt_long_outlined,
-                                size: 64, color: Colors.grey[300]),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No transactions recorded yet',
-                              style: TextStyle(
-                                  fontSize: 18, color: Colors.grey[500]),
-                            ),
-                          ],
+                  // Transaction Ledger Timeline Title
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.history, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Ledger History',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[700],
+                          ),
                         ),
-                      );
-                    }
+                      ],
+                    ),
+                  ),
 
-                    return ListView.builder(
-                      itemCount: entries.length,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemBuilder: (context, index) {
-                        final entry = entries[index];
-                        if (entry.type == 'sale') {
-                          return _buildSaleTile(
-                              context, entry.entity as Sale, currencyFormat, dateFormat);
-                        } else {
-                          return _buildPaymentTile(
-                              context, entry.entity as Payment, currencyFormat, dateFormat);
-                        }
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
+                  // Chronological Ledger History
+                  Expanded(
+                    child: entries.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.receipt_long_outlined,
+                                    size: 64, color: Colors.grey[300]),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No transactions recorded yet',
+                                  style: TextStyle(
+                                      fontSize: 18, color: Colors.grey[500]),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: entries.length,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemBuilder: (context, index) {
+                              final entry = entries[index];
+                              if (entry.type == 'sale') {
+                                return _buildSaleTile(
+                                    context, entry.entity as Sale, currencyFormat, dateFormat);
+                              } else {
+                                return _buildPaymentTile(
+                                    context, entry.entity as Payment, currencyFormat, dateFormat);
+                              }
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
           ),
           floatingActionButton: (ref.watch(isAdminProvider).value ?? false)
               ? null
@@ -282,11 +282,13 @@ class CustomerDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionsBar(BuildContext context, Customer customer) {
+  Widget _buildActionsBar(BuildContext context, Customer customer, List<LedgerEntry> entries) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        alignment: WrapAlignment.center,
         children: [
           // Action call/copy
           _ActionButton(
@@ -311,6 +313,42 @@ class CustomerDetailScreen extends ConsumerWidget {
                   'Phone: ${customer.phone}\n'
                   'Pending amount: ${customer.pendingAmount}';
               _copyToClipboard(context, details, 'Customer details');
+            },
+          ),
+          // Share PDF Statement
+          _ActionButton(
+            icon: Icons.picture_as_pdf,
+            label: 'Share PDF',
+            onPressed: () async {
+              try {
+                final pdfBytes = await InvoiceHelper.generateLedgerStatementPdf(customer, entries);
+                await Printing.sharePdf(
+                  bytes: pdfBytes,
+                  filename: 'Statement-${customer.name.replaceAll(' ', '_')}.pdf',
+                );
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error generating PDF: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+          ),
+          // Share Text Statement
+          _ActionButton(
+            icon: Icons.chat_outlined,
+            label: 'Share Text',
+            onPressed: () async {
+              try {
+                await InvoiceHelper.shareLedgerStatement(customer, entries);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error sharing text: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
             },
           ),
         ],

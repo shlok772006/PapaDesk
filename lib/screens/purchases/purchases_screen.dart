@@ -9,6 +9,8 @@ import '../../providers/supplier_providers.dart';
 import '../../providers/product_providers.dart';
 import '../../providers/role_provider.dart';
 import 'new_purchase_screen.dart';
+import 'package:printing/printing.dart';
+import '../../utils/invoice_helper.dart';
 
 class PurchasesScreen extends ConsumerWidget {
   const PurchasesScreen({super.key});
@@ -157,7 +159,7 @@ class _PurchaseTile extends ConsumerWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: () => _showPurchaseDetails(context, supplierName, totalQty, detailedSummary),
+        onTap: () => _showPurchaseDetails(context, supplierName, totalQty, detailedSummary, productsAsync.value ?? []),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -209,7 +211,13 @@ class _PurchaseTile extends ConsumerWidget {
     );
   }
 
-  void _showPurchaseDetails(BuildContext context, String supplierName, int totalQty, String detailedSummary) {
+  void _showPurchaseDetails(
+    BuildContext context,
+    String supplierName,
+    int totalQty,
+    String detailedSummary,
+    List<Product> products,
+  ) {
     final fullDateFormat = DateFormat('dd MMMM yyyy, hh:mm a');
 
     showModalBottomSheet(
@@ -299,10 +307,60 @@ class _PurchaseTile extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: FilledButton.icon(
+                          onPressed: () async {
+                            try {
+                              final pdfBytes = await InvoiceHelper.generatePurchasePdf(purchase, supplierName, products);
+                              await Printing.sharePdf(
+                                bytes: pdfBytes,
+                                filename: 'Purchase-${purchase.id.substring(0, purchase.id.length.clamp(0, 8))}.pdf',
+                              );
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error generating PDF: $e'), backgroundColor: Colors.red),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.picture_as_pdf),
+                          label: const Text('Share PDF', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            try {
+                              await InvoiceHelper.sharePurchaseBillText(purchase, supplierName, products);
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error sharing text: $e'), backgroundColor: Colors.red),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.chat_outlined),
+                          label: const Text('Share Text', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
                 SizedBox(
                   height: 52,
-                  child: FilledButton(
+                  child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Close', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),

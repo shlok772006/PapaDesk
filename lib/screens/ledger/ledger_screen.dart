@@ -15,6 +15,7 @@ class LedgerScreen extends ConsumerStatefulWidget {
 
 class _LedgerScreenState extends ConsumerState<LedgerScreen> {
   String _searchQuery = '';
+  bool _showOnlyWithDues = false;
   final _currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
 
   @override
@@ -34,7 +35,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
         children: [
           // Search box
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search customer...',
@@ -51,6 +52,36 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
               onChanged: (value) => setState(() => _searchQuery = value),
             ),
           ),
+
+          // Quick filters
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                ChoiceChip(
+                  label: const Text('Show All', style: TextStyle(fontWeight: FontWeight.bold)),
+                  selected: !_showOnlyWithDues,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _showOnlyWithDues = false);
+                    }
+                  },
+                ),
+                const SizedBox(width: 12),
+                ChoiceChip(
+                  label: const Text('Dues Pending ⚠️', style: TextStyle(fontWeight: FontWeight.bold)),
+                  selected: _showOnlyWithDues,
+                  selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _showOnlyWithDues = true);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
 
           // Customer Directory
           Expanded(
@@ -70,7 +101,11 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                             c.phone.contains(_searchQuery))
                         .toList();
 
-                if (filtered.isEmpty) {
+                final displayed = _showOnlyWithDues
+                    ? filtered.where((c) => c.pendingAmount > 0).toList()
+                    : filtered;
+
+                if (displayed.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -80,7 +115,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                         const SizedBox(height: 16),
                         Text(
                           _searchQuery.isEmpty
-                              ? 'No customers yet'
+                              ? (_showOnlyWithDues ? 'No customers with pending dues' : 'No customers yet')
                               : 'No matching customers',
                           style: TextStyle(
                             fontSize: 18,
@@ -93,10 +128,10 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                 }
 
                 return ListView.builder(
-                  itemCount: filtered.length,
+                  itemCount: displayed.length,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemBuilder: (context, index) {
-                    final customer = filtered[index];
+                    final customer = displayed[index];
                     final hasPending = customer.pendingAmount > 0;
 
                     return Card(

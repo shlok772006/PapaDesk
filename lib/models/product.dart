@@ -17,6 +17,7 @@ class Product {
   final int currentStock;
   final int minStock;
   final String? imageBase64; // Base64 Data URL for optional product image
+  final bool isOneOff; // Whether this is a unique one-off/second-hand item
   final bool hasPendingWrites;
 
   const Product({
@@ -29,13 +30,15 @@ class Product {
     this.currentStock = 0,
     this.minStock = 0,
     this.imageBase64,
+    this.isOneOff = false,
     this.hasPendingWrites = false,
   });
 
   /// Whether this product is below its minimum stock threshold.
   /// Only flags if minStock is configured (> 0), so new products with default
   /// values (0/0) don't appear as low-stock warnings. (M12 fix)
-  bool get isLowStock => minStock > 0 && currentStock < minStock;
+  /// One-off/second-hand products never trigger low stock warnings.
+  bool get isLowStock => !isOneOff && minStock > 0 && currentStock < minStock;
 
   /// Creates a Product from a Firestore document snapshot.
   factory Product.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -50,6 +53,7 @@ class Product {
       currentStock: (data['currentStock'] as num?)?.toInt() ?? 0,
       minStock: (data['minStock'] as num?)?.toInt() ?? 0,
       imageBase64: data['imageBase64'] as String?,
+      isOneOff: data['isOneOff'] as bool? ?? false,
       hasPendingWrites: doc.metadata.hasPendingWrites,
     );
   }
@@ -68,6 +72,7 @@ class Product {
       'currentStock': currentStock,
       'minStock': minStock,
       'imageBase64': imageBase64,
+      'isOneOff': isOneOff,
     };
   }
 
@@ -82,6 +87,7 @@ class Product {
       'sellingPrice': sellingPrice,
       'minStock': minStock,
       'imageBase64': imageBase64,
+      'isOneOff': isOneOff,
     };
   }
 }

@@ -27,6 +27,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   String? _imageBase64;
   String? _selectedCategory;
   bool _showCustomCategoryInput = false;
+  bool _isOneOff = false;
 
   bool get isEdit => widget.product != null;
 
@@ -42,6 +43,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         TextEditingController(text: widget.product?.currentStock.toString() ?? '0');
     _customCategoryController = TextEditingController();
     _imageBase64 = widget.product?.imageBase64;
+    _isOneOff = widget.product?.isOneOff ?? false;
     
     final category = widget.product?.category ?? '';
     if (category.isNotEmpty) {
@@ -86,6 +88,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             'sellingPrice': sellingPrice,
             'minStock': minStock,
             'imageBase64': _imageBase64,
+            'isOneOff': _isOneOff,
           },
         );
       } else {
@@ -98,6 +101,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
           minStock: minStock,
           currentStock: initialStock,
           imageBase64: _imageBase64,
+          isOneOff: _isOneOff,
         );
         await repo.addProduct(newProduct);
       }
@@ -338,6 +342,29 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                   return 'Enter a valid price (₹0 or more)';
                 }
                 return null;
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // One-Off Switch Toggle
+            SwitchListTile(
+              title: const Text(
+                'One-Off / Second Hand Item',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Automatically hides from inventory once sold out (stock = 0)',
+                style: TextStyle(fontSize: 13),
+              ),
+              value: _isOneOff,
+              activeTrackColor: Theme.of(context).colorScheme.primary,
+              onChanged: (bool value) {
+                setState(() {
+                  _isOneOff = value;
+                  if (value) {
+                    _minStockController.text = '0';
+                  }
+                });
               },
             ),
             const SizedBox(height: 20),

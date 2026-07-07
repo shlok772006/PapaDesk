@@ -10,7 +10,6 @@ import '../../providers/supplier_providers.dart';
 import '../../providers/repository_providers.dart';
 import '../../providers/role_provider.dart';
 import '../../utils/invoice_helper.dart';
-import '../../widgets/sync_indicator.dart';
 
 class SupplierDetailScreen extends ConsumerWidget {
   final String supplierId;
@@ -457,7 +456,7 @@ class SupplierDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: method,
+                      initialValue: method,
                       decoration: const InputDecoration(border: OutlineInputBorder()),
                       items: const [
                         DropdownMenuItem(value: 'cash', child: Text('Cash')),

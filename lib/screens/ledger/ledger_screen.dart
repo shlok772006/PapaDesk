@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../models/supplier.dart';
 import '../../providers/customer_providers.dart';
 import '../../providers/supplier_providers.dart';
 import '../../providers/role_provider.dart';

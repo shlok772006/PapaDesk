@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/purchase.dart';
+import '../utils/offline_extension.dart';
 
 /// Repository for the `purchases` collection.
 ///
@@ -21,7 +22,8 @@ class PurchaseRepository {
   ///
   /// In a single [WriteBatch]:
   /// 1. Writes the `purchases` document.
-  /// 2. For each item: increments the product's `currentStock` by quantity.
+  /// 2. Increments the supplier's pendingAmount by purchase.balanceDue.
+  /// 3. For each item: increments the product's `currentStock` by quantity.
   ///
   /// Works offline — queues locally and syncs when connected.
   Future<String> recordPurchase(Purchase purchase) async {
@@ -31,15 +33,23 @@ class PurchaseRepository {
     final purchaseDocRef = _purchasesCollection.doc();
     batch.set(purchaseDocRef, purchase.toFirestore());
 
-    // 2. Increment stock and update Weighted Average Cost for each product.
+    // 2. Increment the supplier's pendingAmount by balanceDue (if any)
+    if (purchase.balanceDue > 0) {
+      final supplierRef = _firestore.collection('suppliers').doc(purchase.supplierId);
+      batch.update(supplierRef, {
+        'pendingAmount': FieldValue.increment(purchase.balanceDue),
+      });
+    }
+
+    // 3. Increment stock and update Weighted Average Cost for each product.
     for (final item in purchase.items) {
       final productRef = _firestore.collection('products').doc(item.productId);
       
       DocumentSnapshot<Map<String, dynamic>>? productSnapshot;
       try {
-        productSnapshot = await productRef.get();
+        productSnapshot = await productRef.getOfflineSafe();
       } catch (_) {
-        // Offline cache fallback is handled automatically by Firestore SDK
+        // Offline cache fallback is handled automatically by offline safe extension
       }
       
       double newAverageCost = item.unitCost;

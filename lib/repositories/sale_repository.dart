@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/sale.dart';
+import '../utils/offline_extension.dart';
 
 /// Repository for the `sales` collection.
 ///
@@ -105,7 +106,7 @@ class SaleRepository {
 
   /// Returns a single sale by ID.
   Future<Sale?> getSale(String id) async {
-    final doc = await _salesCollection.doc(id).get();
+    final doc = await _salesCollection.doc(id).getOfflineSafe();
     if (!doc.exists) return null;
     return Sale.fromFirestore(doc);
   }

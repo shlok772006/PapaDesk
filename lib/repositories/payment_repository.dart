@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/payment.dart';
+import '../utils/offline_extension.dart';
 
 /// Repository for the `payments` collection.
 ///
@@ -76,7 +77,7 @@ class PaymentRepository {
 
   /// Returns a single payment by ID.
   Future<Payment?> getPayment(String id) async {
-    final doc = await _paymentsCollection.doc(id).get();
+    final doc = await _paymentsCollection.doc(id).getOfflineSafe();
     if (!doc.exists) return null;
     return Payment.fromFirestore(doc);
   }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/product.dart';
+import '../utils/offline_extension.dart';
 
 /// Repository for the `products` collection.
 ///
@@ -25,7 +26,7 @@ class ProductRepository {
 
   /// Returns a single product by ID.
   Future<Product?> getProduct(String id) async {
-    final doc = await _collection.doc(id).get();
+    final doc = await _collection.doc(id).getOfflineSafe();
     if (!doc.exists) return null;
     return Product.fromFirestore(doc);
   }
@@ -61,11 +62,11 @@ class ProductRepository {
     _collection.doc(id).update(fields).catchError((e) {});
   }
 
-  /// Deletes a product. Use with caution — only for test data cleanup
-  /// or products that have never been sold.
+  /// Deletes a product.
   Future<void> deleteProduct(String id) async {
     _collection.doc(id).delete().catchError((e) {});
   }
+
 
   /// Returns a DocumentReference for use in batched writes
   /// (e.g., SaleRepository needs this to decrement currentStock).

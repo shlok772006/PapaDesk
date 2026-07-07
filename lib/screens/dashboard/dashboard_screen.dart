@@ -9,6 +9,7 @@ import 'search_screen.dart';
 import 'reports_screen.dart';
 import '../settings/settings_screen.dart';
 import '../../providers/role_provider.dart';
+import '../../providers/product_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -245,6 +246,10 @@ class DashboardScreen extends ConsumerWidget {
 
             // Low Stock Warnings
             _buildLowStockWarningCard(context, ref, stats.lowStockCount),
+            if (stats.lowStockCount > 0) ...[
+              const SizedBox(height: 12),
+              _buildLowStockItemsList(context, ref),
+            ],
               ],
             ),
           ),
@@ -518,6 +523,96 @@ class DashboardScreen extends ConsumerWidget {
           child: child,
         ),
       ),
+    );
+  }
+
+  Widget _buildLowStockItemsList(BuildContext context, WidgetRef ref) {
+    final lowStockAsync = ref.watch(lowStockProductsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return lowStockAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (products) {
+        if (products.isEmpty) return const SizedBox.shrink();
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1F28) : Colors.red[50]?.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? const Color(0xFF3A2222) : Colors.red[100]!,
+            ),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.red[700], size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Reorder Soon Checklist:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.red[300] : Colors.red[800],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: products.length.clamp(0, 5), // Show up to 5 items on dashboard
+                separatorBuilder: (_, __) => const Divider(height: 8, thickness: 0.5),
+                itemBuilder: (context, index) {
+                  final p = products[index];
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          p.name,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        '${p.currentStock} pcs left (min ${p.minStock})',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red[700],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              if (products.length > 5) ...[
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () => ref.read(activeTabProvider.notifier).setTab(4),
+                  child: Center(
+                    child: Text(
+                      'View all ${products.length} low stock products...',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

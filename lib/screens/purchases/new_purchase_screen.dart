@@ -20,9 +20,17 @@ class NewPurchaseScreen extends ConsumerStatefulWidget {
 class _NewPurchaseScreenState extends ConsumerState<NewPurchaseScreen> {
   Supplier? _selectedSupplier;
   final List<_PurchaseCartItem> _cartItems = [];
+  final _paidController = TextEditingController();
+  String _paymentMethod = 'cash'; // 'cash', 'upi', 'net_banking', 'none'
   bool _saving = false;
 
   final _currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
+
+  @override
+  void dispose() {
+    _paidController.dispose();
+    super.dispose();
+  }
 
   double get _totalCost =>
       _cartItems.fold(0, (sum, item) => sum + item.subtotal);
@@ -89,6 +97,15 @@ class _NewPurchaseScreenState extends ConsumerState<NewPurchaseScreen> {
       return;
     }
 
+    final total = _totalCost;
+    final paidAmountText = _paidController.text.trim();
+    final paidAmount = paidAmountText.isEmpty ? total : (double.tryParse(paidAmountText) ?? 0.0);
+
+    if (paidAmount < 0) {
+      _showError('Amount paid cannot be negative');
+      return;
+    }
+
     setState(() => _saving = true);
 
     final userId = ref.read(currentUserIdProvider);
@@ -104,7 +121,9 @@ class _NewPurchaseScreenState extends ConsumerState<NewPurchaseScreen> {
                 unitCost: item.unitCost,
               ))
           .toList(),
-      totalCost: _totalCost,
+      totalCost: total,
+      paidAmount: paidAmount,
+      paymentMethod: _paymentMethod,
       createdBy: userId,
     );
 
@@ -279,7 +298,71 @@ class _NewPurchaseScreenState extends ConsumerState<NewPurchaseScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _paidController,
+                      decoration: InputDecoration(
+                        labelText: 'Amount Paid Now',
+                        prefixText: '₹ ',
+                        hintText: _currencyFormat.format(_totalCost).replaceAll('₹', '').trim(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        helperText: 'Leave empty for full payment',
+                      ),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
                     const SizedBox(height: 16),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Payment Method:',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Cash'),
+                          selected: _paymentMethod == 'cash',
+                          onSelected: (selected) {
+                            if (selected) setState(() => _paymentMethod = 'cash');
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('UPI'),
+                          selected: _paymentMethod == 'upi',
+                          onSelected: (selected) {
+                            if (selected) setState(() => _paymentMethod = 'upi');
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('Net Banking'),
+                          selected: _paymentMethod == 'net_banking',
+                          onSelected: (selected) {
+                            if (selected) setState(() => _paymentMethod = 'net_banking');
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('Unpaid'),
+                          selected: _paymentMethod == 'none',
+                          selectedColor: Colors.red[50],
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _paymentMethod = 'none';
+                                _paidController.text = '0';
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
 
                     // Save purchase button
                     SizedBox(

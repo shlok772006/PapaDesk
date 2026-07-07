@@ -8,7 +8,10 @@ import '../models/customer.dart';
 import '../models/payment.dart';
 import '../models/purchase.dart';
 import '../models/product.dart';
+import '../models/supplier.dart';
+import '../models/supplier_payment.dart';
 import '../providers/customer_providers.dart';
+import '../providers/supplier_providers.dart';
 
 class InvoiceHelper {
   static final _currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: 'Rs ');
@@ -753,6 +756,243 @@ class InvoiceHelper {
     await Share.share(
       text,
       subject: 'Stock Purchase Bill — $supplierName',
+    );
+  }
+
+  /// Generates a PDF Account Statement for a supplier.
+  static Future<Uint8List> generateSupplierLedgerStatementPdf(Supplier supplier, List<SupplierLedgerEntry> entries) async {
+    final pdf = pw.Document();
+
+    final roseGoldColor = PdfColor.fromHex('#B76E79');
+    final charcoalColor = PdfColor.fromHex('#2E2E3A');
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'SUPPLIER ACCOUNT STATEMENT',
+                        style: pw.TextStyle(
+                          fontSize: 22,
+                          fontWeight: pw.FontWeight.bold,
+                          color: charcoalColor,
+                        ),
+                      ),
+                      pw.Text(
+                        'Smart Business Ledger',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: roseGoldColor,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(
+                        'WE OWE: ${_currencyFormat.format(supplier.pendingAmount)}',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: supplier.pendingAmount > 0 ? PdfColors.red : PdfColors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 16),
+              pw.Divider(color: roseGoldColor, thickness: 2),
+              pw.SizedBox(height: 16),
+
+              // Billing Details Section
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'SUPPLIER DETAILS:',
+                          style: pw.TextStyle(
+                            fontSize: 10,
+                            fontWeight: pw.FontWeight.bold,
+                            color: roseGoldColor,
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          supplier.name,
+                          style: pw.TextStyle(
+                            fontSize: 14,
+                            fontWeight: pw.FontWeight.bold,
+                            color: charcoalColor,
+                          ),
+                        ),
+                        if (supplier.phone.isNotEmpty) ...[
+                          pw.SizedBox(height: 2),
+                          pw.Text(
+                            'Phone: ${supplier.phone}',
+                            style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Text(
+                          'STATEMENT DETAILS:',
+                          style: pw.TextStyle(
+                            fontSize: 10,
+                            fontWeight: pw.FontWeight.bold,
+                            color: roseGoldColor,
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          'Generated Date: ${DateFormat('dd-MM-yyyy hh:mm a').format(DateTime.now())}',
+                          style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 32),
+
+              // Transactions Table
+              pw.TableHelper.fromTextArray(
+                border: const pw.TableBorder(
+                  bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  top: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  left: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  right: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  horizontalInside: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                  verticalInside: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                ),
+                headerStyle: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  color: charcoalColor,
+                  fontSize: 12,
+                ),
+                headers: ['Date', 'Type', 'Total Cost', 'Paid Initially', 'Dues Added/Reduced'],
+                data: entries.map((entry) {
+                  final dateStr = DateFormat('dd-MM-yyyy').format(entry.date);
+                  if (entry.type == 'purchase') {
+                    final p = entry.entity as Purchase;
+                    return [
+                      dateStr,
+                      'Purchase',
+                      _currencyFormat.format(p.totalCost),
+                      _currencyFormat.format(p.paidAmount),
+                      _currencyFormat.format(p.balanceDue),
+                    ];
+                  } else {
+                    final pm = entry.entity as SupplierPayment;
+                    return [
+                      dateStr,
+                      'Payment Made (${pm.method.toUpperCase()})',
+                      '-',
+                      '-',
+                      '-${_currencyFormat.format(pm.amount)}',
+                    ];
+                  }
+                }).toList(),
+                cellAlignment: pw.Alignment.centerLeft,
+                cellAlignments: {
+                  2: pw.Alignment.centerRight,
+                  3: pw.Alignment.centerRight,
+                  4: pw.Alignment.centerRight,
+                },
+                cellStyle: pw.TextStyle(fontSize: 10, color: charcoalColor),
+                cellDecoration: (int rowIndex, dynamic cellValue, int colIndex) {
+                  return const pw.BoxDecoration(color: PdfColors.white);
+                },
+              ),
+              pw.SizedBox(height: 24),
+
+              pw.Spacer(),
+
+              // Footer
+              pw.Divider(color: PdfColors.grey300, thickness: 0.5),
+              pw.SizedBox(height: 8),
+              pw.Center(
+                child: pw.Text(
+                  'Smart Business Ledger — Fast, Secure, and Offline-First',
+                  style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  /// Generates a clean text ledger statement optimized for WhatsApp.
+  static String generateSupplierLedgerStatementText(Supplier supplier, List<SupplierLedgerEntry> entries) {
+    final buffer = StringBuffer();
+    buffer.writeln('*📄 SUPPLIER ACCOUNT STATEMENT*');
+    buffer.writeln('------------------------------------------');
+    buffer.writeln('*Supplier:* ${supplier.name}');
+    if (supplier.phone.isNotEmpty) {
+      buffer.writeln('*Phone:* ${supplier.phone}');
+    }
+    buffer.writeln('*Current We Owe Balance:* *₹${supplier.pendingAmount.toStringAsFixed(0)}*');
+    buffer.writeln('------------------------------------------');
+    buffer.writeln('*Recent Ledger History:*');
+    buffer.writeln('');
+
+    final limit = entries.length.clamp(0, 10);
+    for (var i = 0; i < limit; i++) {
+      final entry = entries[i];
+      final dateStr = DateFormat('dd-MM-yyyy').format(entry.date);
+      if (entry.type == 'purchase') {
+        final p = entry.entity as Purchase;
+        buffer.writeln('• $dateStr: *Stock Purchase*');
+        buffer.writeln('  Total: ₹${p.totalCost.toStringAsFixed(0)} | Paid: ₹${p.paidAmount.toStringAsFixed(0)}');
+        final dues = p.balanceDue;
+        if (dues > 0) {
+          buffer.writeln('  Remaining Purchase Dues: *₹${dues.toStringAsFixed(0)}*');
+        }
+      } else {
+        final pm = entry.entity as SupplierPayment;
+        buffer.writeln('• $dateStr: *Payment Made (${pm.method.toUpperCase()})*');
+        buffer.writeln('  Amount: *₹${pm.amount.toStringAsFixed(0)}*');
+      }
+      buffer.writeln('');
+    }
+
+    buffer.writeln('------------------------------------------');
+    buffer.writeln('Please review the statement. Thank you!');
+    return buffer.toString();
+  }
+
+  /// Shares the supplier statement text.
+  static Future<void> shareSupplierLedgerStatement(Supplier supplier, List<SupplierLedgerEntry> entries) async {
+    final text = generateSupplierLedgerStatementText(supplier, entries);
+    await Share.share(
+      text,
+      subject: 'Supplier Account Statement — ${supplier.name}',
     );
   }
 }

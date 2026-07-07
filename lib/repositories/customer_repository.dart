@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/customer.dart';
+import '../utils/offline_extension.dart';
 
 /// Repository for the `customers` collection.
 ///
-/// Handles CRUD operations. Aggregate fields (totalPurchases, pendingAmount)
-/// are NEVER written directly from this class — they are only updated via
-/// FieldValue.increment() in SaleRepository and PaymentRepository.
+/// NEVER use a Firestore transaction here — transactions fail offline.
+/// (AGENTS.md constraint #1, system-design.md §2)
 class CustomerRepository {
   final FirebaseFirestore _firestore;
   late final CollectionReference<Map<String, dynamic>> _collection;
@@ -15,7 +15,8 @@ class CustomerRepository {
     _collection = _firestore.collection('customers');
   }
 
-  /// Creates a new customer. totalPurchases and pendingAmount start at 0.
+  /// Creates a new customer.
+  /// Uses fire-and-forget pattern for offline compatibility (AGENTS.md constraint #2).
   Future<String> addCustomer(Customer customer) async {
     final docRef = _collection.doc();
     docRef.set(customer.toFirestore()).catchError((e) {});
@@ -24,7 +25,7 @@ class CustomerRepository {
 
   /// Returns a single customer by ID.
   Future<Customer?> getCustomer(String id) async {
-    final doc = await _collection.doc(id).get();
+    final doc = await _collection.doc(id).getOfflineSafe();
     if (!doc.exists) return null;
     return Customer.fromFirestore(doc);
   }

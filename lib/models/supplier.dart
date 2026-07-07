@@ -5,13 +5,14 @@ class Supplier {
   final String id;
   final String name;
   final String phone;
-
+  final double pendingAmount;
   final bool hasPendingWrites;
 
   const Supplier({
     required this.id,
     required this.name,
     this.phone = '',
+    this.pendingAmount = 0.0,
     this.hasPendingWrites = false,
   });
 
@@ -21,6 +22,7 @@ class Supplier {
       id: doc.id,
       name: data['name'] as String? ?? '',
       phone: data['phone'] as String? ?? '',
+      pendingAmount: (data['pendingAmount'] as num?)?.toDouble() ?? 0.0,
       hasPendingWrites: doc.metadata.hasPendingWrites,
     );
   }
@@ -29,6 +31,7 @@ class Supplier {
     return {
       'name': name,
       'phone': phone,
+      'pendingAmount': pendingAmount,
     };
   }
 }

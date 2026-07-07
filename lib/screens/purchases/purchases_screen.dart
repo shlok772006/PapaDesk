@@ -196,13 +196,40 @@ class _PurchaseTile extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                currencyFormat.format(purchase.totalCost),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue[700],
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    currencyFormat.format(purchase.totalCost),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                  if (purchase.balanceDue > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Dues: ${currencyFormat.format(purchase.balanceDue)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      purchase.paymentMethod == 'none' ? 'UNPAID' : purchase.paymentMethod.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -279,6 +306,41 @@ class _PurchaseTile extends ConsumerWidget {
                     const Text('Purchase Date:', style: TextStyle(fontSize: 15, color: Colors.grey)),
                     Text(
                       fullDateFormat.format(purchase.purchaseDate),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Amount Paid:', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                    Text(
+                      currencyFormat.format(purchase.paidAmount),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.green),
+                    ),
+                  ],
+                ),
+                if (purchase.balanceDue > 0) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Balance Due:', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                      Text(
+                        currencyFormat.format(purchase.balanceDue),
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Payment Method:', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                    Text(
+                      purchase.paymentMethod == 'none' ? 'UNPAID' : purchase.paymentMethod.toUpperCase(),
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                   ],

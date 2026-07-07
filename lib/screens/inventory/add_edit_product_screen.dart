@@ -124,6 +124,59 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     }
   }
 
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Product?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Are you sure you want to delete this product? This action cannot be undone and will remove it from inventory.',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel', style: TextStyle(fontSize: 16)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Delete', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _saving = true);
+      try {
+        final repo = ref.read(productRepositoryProvider);
+        await repo.deleteProduct(widget.product!.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Product deleted ✓'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting product: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() => _saving = false);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final categoriesList = ref.watch(categoriesProvider);
@@ -138,6 +191,14 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
           isEdit ? 'Edit Product' : 'Add Product',
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
+        actions: [
+          if (isEdit)
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              tooltip: 'Delete Product',
+              onPressed: () => _confirmDelete(context),
+            ),
+        ],
       ),
       body: Form(
         key: _formKey,

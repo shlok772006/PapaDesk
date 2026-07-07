@@ -39,6 +39,8 @@ class Purchase {
   final List<PurchaseItem> items;
   final double totalCost;
   final String createdBy;
+  final double paidAmount;
+  final String paymentMethod; // 'cash', 'upi', 'net_banking', 'none'
   final bool hasPendingWrites;
 
   const Purchase({
@@ -48,23 +50,28 @@ class Purchase {
     required this.items,
     required this.totalCost,
     required this.createdBy,
+    this.paidAmount = 0.0,
+    this.paymentMethod = 'cash',
     this.hasPendingWrites = false,
   });
 
+  double get balanceDue => (totalCost - paidAmount).clamp(0.0, double.infinity);
+
   factory Purchase.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
+    final total = (data['totalCost'] as num?)?.toDouble() ?? 0.0;
     return Purchase(
       id: doc.id,
       supplierId: data['supplierId'] as String? ?? '',
       purchaseDate:
           (data['purchaseDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      items: (data['items'] as List<dynamic>?)
-              ?.map(
-                  (item) => PurchaseItem.fromMap(item as Map<String, dynamic>))
-              .toList() ??
-          [],
-      totalCost: (data['totalCost'] as num?)?.toDouble() ?? 0,
-      createdBy: data['createdBy'] as String? ?? '',
+      items: (data['items'] as List? ?? [])
+          .map((item) => PurchaseItem.fromMap(item as Map<String, dynamic>))
+          .toList(),
+      totalCost: total,
+      createdBy: data['createdBy'] as String? ?? 'anonymous',
+      paidAmount: (data['paidAmount'] as num?)?.toDouble() ?? total, // fallback to totalCost if not set
+      paymentMethod: data['paymentMethod'] as String? ?? 'cash',
       hasPendingWrites: doc.metadata.hasPendingWrites,
     );
   }
@@ -73,9 +80,11 @@ class Purchase {
     return {
       'supplierId': supplierId,
       'purchaseDate': Timestamp.fromDate(purchaseDate),
-      'items': items.map((item) => item.toMap()).toList(),
+      'items': items.map((i) => i.toMap()).toList(),
       'totalCost': totalCost,
       'createdBy': createdBy,
+      'paidAmount': paidAmount,
+      'paymentMethod': paymentMethod,
     };
   }
 }

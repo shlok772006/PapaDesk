@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/customer_providers.dart';
 import '../../providers/product_providers.dart';
@@ -100,22 +103,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               CircularProgressIndicator(),
               SizedBox(width: 16),
-              Text('Generating backup code...'),
+              Text('Generating backup file...'),
             ],
           ),
         ),
       );
       
-      final code = await BackupHelper.generateBackupCode();
+      await BackupHelper.exportBackupToFile();
       if (!mounted) return;
       
       Navigator.pop(context); // close loader
-      await Clipboard.setData(ClipboardData(text: code));
-      if (!mounted) return;
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Backup code copied to clipboard ✓ Share it via WhatsApp/Email to save it.'),
+          content: Text('Backup file exported successfully ✓'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 4),
         ),
@@ -130,31 +131,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _importBackup() async {
-    final controller = TextEditingController();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Restore Database?', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Pasting a backup code will restore historical sales, customers, and inventory configurations.\n\n'
-              'Warning: This may overwrite existing data if the IDs match.',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              maxLines: 5,
-              decoration: InputDecoration(
-                hintText: 'Paste the backup code here...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
+        content: const Text(
+          'Selecting a backup file will restore historical sales, customers, and inventory configurations.\n\n'
+          'Warning: This may overwrite existing data if the document IDs match.',
+          style: TextStyle(fontSize: 15),
         ),
         actions: [
           TextButton(
@@ -162,17 +146,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () {
-              if (controller.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please paste a backup code'), backgroundColor: Colors.red),
-                );
-                return;
-              }
-              Navigator.pop(dialogCtx, true);
-            },
+            onPressed: () => Navigator.pop(dialogCtx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.orange[800]),
-            child: const Text('Restore'),
+            child: const Text('Choose Backup File'),
           ),
         ],
       ),
@@ -181,22 +157,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirm != true) return;
     if (!mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Restoring database cache...'),
-          ],
-        ),
-      ),
-    );
-
     try {
-      await BackupHelper.restoreBackupCode(controller.text);
+      // 1. Trigger file picker first to keep loader from obscuring file dialog
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (result == null || result.files.single.path == null) {
+        return; // User cancelled, do nothing
+      }
+
+      if (!mounted) return;
+
+      // 2. Show loading spinner
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Restoring database cache...'),
+            ],
+          ),
+        ),
+      );
+
+      // 3. Read and parse file
+      final file = File(result.files.single.path!);
+      final fileContent = await file.readAsString();
+      final trimmed = fileContent.trim();
+
+      String jsonStr;
+      if (trimmed.startsWith('{')) {
+        jsonStr = trimmed;
+      } else {
+        // Handle legacy base64-encoded backup code pasted into a file or similar format
+        final cleanBase64 = trimmed.replaceAll('\n', '').replaceAll('\r', '').replaceAll(' ', '');
+        final bytes = base64Decode(cleanBase64);
+        jsonStr = utf8.decode(bytes);
+      }
+
+      await BackupHelper.restoreBackupJson(jsonStr);
       if (!mounted) return;
       
       // Force refresh all stream providers with restored cache records
@@ -215,7 +219,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      Navigator.pop(context); // close loader
+      Navigator.pop(context); // close loader if it was shown
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Restore failed: $e'),
@@ -379,16 +383,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 ListTile(
                   leading: Icon(Icons.backup, color: Theme.of(context).colorScheme.primary),
-                  title: const Text('Export Backup Code', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Copies your offline database text code to the clipboard.', style: TextStyle(fontSize: 13)),
+                  title: const Text('Export Backup File', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Exports your database as a file to share via WhatsApp, Email, etc.', style: TextStyle(fontSize: 13)),
                   onTap: _exportBackup,
                   trailing: const Icon(Icons.chevron_right),
                 ),
                 const Divider(height: 1, indent: 56),
                 ListTile(
                   leading: Icon(Icons.settings_backup_restore, color: Colors.orange[800]),
-                  title: const Text('Restore Backup Code', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Pasts a backup code to restore your local database.', style: TextStyle(fontSize: 13)),
+                  title: const Text('Restore Backup File', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Select a backup file from your device to restore your database.', style: TextStyle(fontSize: 13)),
                   onTap: _importBackup,
                   trailing: const Icon(Icons.chevron_right),
                 ),

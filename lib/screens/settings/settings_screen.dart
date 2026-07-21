@@ -13,6 +13,8 @@ import '../../providers/supplier_providers.dart';
 import '../../providers/sale_providers.dart';
 import '../../providers/payment_providers.dart';
 import '../../utils/backup_helper.dart';
+import '../../utils/excel_export_helper.dart';
+import 'package:intl/intl.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -229,7 +231,126 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  Future<void> _exportExcel() async {
+    // Default to the current month
+    int selectedYear = DateTime.now().year;
+    int selectedMonth = DateTime.now().month;
 
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final monthName = DateFormat('MMMM yyyy').format(DateTime(selectedYear, selectedMonth));
+            return AlertDialog(
+              title: const Text('Export Monthly Excel', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Pick a month to export all sales, payments, purchases, customers, products, and suppliers into one Excel file.',
+                    style: TextStyle(fontSize: 15),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left, size: 32),
+                        onPressed: () {
+                          setDialogState(() {
+                            if (selectedMonth == 1) {
+                              selectedMonth = 12;
+                              selectedYear--;
+                            } else {
+                              selectedMonth--;
+                            }
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        monthName,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right, size: 32),
+                        onPressed: () {
+                          // Don't allow going past current month
+                          final now = DateTime.now();
+                          if (selectedYear < now.year || (selectedYear == now.year && selectedMonth < now.month)) {
+                            setDialogState(() {
+                              if (selectedMonth == 12) {
+                                selectedMonth = 1;
+                                selectedYear++;
+                              } else {
+                                selectedMonth++;
+                              }
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton.icon(
+                  onPressed: () => Navigator.pop(dialogCtx, true),
+                  icon: const Icon(Icons.download),
+                  label: const Text('Export'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Generating Excel file...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await ExcelExportHelper.exportMonthlyExcel(
+        year: selectedYear,
+        month: selectedMonth,
+      );
+      if (!mounted) return;
+      Navigator.pop(context); // close loader
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Excel file exported successfully ✓'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // close loader
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -394,6 +515,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: const Text('Restore Backup File', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   subtitle: const Text('Select a backup file from your device to restore your database.', style: TextStyle(fontSize: 13)),
                   onTap: _importBackup,
+                  trailing: const Icon(Icons.chevron_right),
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: Icon(Icons.table_chart, color: Colors.green[700]),
+                  title: const Text('Export Monthly Excel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Pick a month and export all data as an Excel file.', style: TextStyle(fontSize: 13)),
+                  onTap: _exportExcel,
                   trailing: const Icon(Icons.chevron_right),
                 ),
               ],

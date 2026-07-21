@@ -39,17 +39,19 @@ class BackupHelper {
     final db = FirebaseFirestore.instance;
 
     Future<List<Map<String, dynamic>>> getCollectionData(String name) async {
+      QuerySnapshot<Map<String, dynamic>> snap;
       try {
-        // Fetches from server if online, automatically falls back to cache if offline
-        final snap = await db.collection(name).get();
-        return snap.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id; // Embed document ID so it can be restored exactly
-          return _serializeValue(data) as Map<String, dynamic>;
-        }).toList();
+        // Try cache first — guaranteed to work offline
+        snap = await db.collection(name).get(const GetOptions(source: Source.cache));
       } catch (_) {
-        return [];
+        // Cache miss (e.g., collection never loaded) — fall back to server
+        snap = await db.collection(name).get(const GetOptions(source: Source.server));
       }
+      return snap.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id; // Embed document ID so it can be restored exactly
+        return _serializeValue(data) as Map<String, dynamic>;
+      }).toList();
     }
 
     final backupMap = {
@@ -129,16 +131,19 @@ class BackupHelper {
     final db = FirebaseFirestore.instance;
 
     Future<List<Map<String, dynamic>>> getCollectionData(String name) async {
+      QuerySnapshot<Map<String, dynamic>> snap;
       try {
-        final snap = await db.collection(name).get();
-        return snap.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return _serializeValue(data) as Map<String, dynamic>;
-        }).toList();
+        // Try cache first — guaranteed to work offline
+        snap = await db.collection(name).get(const GetOptions(source: Source.cache));
       } catch (_) {
-        return [];
+        // Cache miss — fall back to server
+        snap = await db.collection(name).get(const GetOptions(source: Source.server));
       }
+      return snap.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return _serializeValue(data) as Map<String, dynamic>;
+      }).toList();
     }
 
     final backupMap = {
